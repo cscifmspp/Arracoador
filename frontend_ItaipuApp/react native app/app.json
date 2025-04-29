@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "spontaneous-blue-almond",
+    "slug": "snack-c9c395fd-6097-485e-aece-0518b2e528e2",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugin": [
+      "expo-react-native-reanimated/plugin"
+    ],
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.anonymous.snackc9c395fd6097485eaece0518b2e528e2"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
