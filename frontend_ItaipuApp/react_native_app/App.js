@@ -6,6 +6,11 @@ import useWebSocket from "react-use-websocket";
 import BottomNavigatorGlass from './components/BottomNavigatorGlass';
 import Header from './components/Header';
 
+import SensorDataScreen from './screens/SensorDataScreen';
+
+
+
+
 export default function App() {
   const [conectado, setConectado] = useState(false);
   const [arracoadorId, setArracoadorId] = useState(-1);
@@ -13,7 +18,7 @@ export default function App() {
   const statusInterval = useRef();
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(
-    "ws://192.168.1.46:8000/ws/arracoador/",
+    "ws://192.168.137.1:8000/ws/arracoador/",
     {
       onOpen: () => { setConectado(true); },
       onError: () => { setConectado(false); },

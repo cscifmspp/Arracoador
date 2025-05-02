@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-xlx66b)&7k$wtyrk6v_q=x)p$@ds#i+g$mbj4oll^5g7#431ex
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.1.46', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -126,3 +126,14 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+INFLUXDB_SETTINGS = {
+    "url": os.getenv("INFLUXDB_URL"),
+    "token": os.getenv("INFLUXDB_TOKEN"),
+    "org": os.getenv("INFLUXDB_ORG"),
+    "bucket": os.getenv("INFLUXDB_BUCKET"),
+}

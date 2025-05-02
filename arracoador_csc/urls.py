@@ -23,11 +23,9 @@
 #     path('', HelloWorld),  # Rota raiz
 # ]
 from django.contrib import admin
-from django.urls import path
-from backend_arracoador.views import hello_api
+from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/hello/', hello_api),  # endpoint da API
+    path('', include('backend_arracoador.urls')),  # ou o nome exato da sua app
 ]
-
