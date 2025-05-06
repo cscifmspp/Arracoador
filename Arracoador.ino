@@ -4,8 +4,7 @@
 #include "tdsMetter.h"
 #include "influx.h"
 
-#include <Servo.h>
-Servo sPrato;
+
 
 void setup() {
   Serial.begin(115200);  // iniciando porta Serial / 115200
@@ -58,8 +57,8 @@ void setup() {
   sPrato.attach(13);
 
 
-    //delay antes inicio
-    delay(1000);
+  //delay antes inicio
+  delay(1000);
 }
 
 char device[30] = "ESP8266-1";
@@ -86,12 +85,19 @@ void loop() {
 
   //  Serial.println("----------------------");
 
-  sPrato.write(180);
+  //sPrato.write(180);
   // delay(1000);
   // sPrato.write(90);
   // delay(1000);
   // sPrato.write(180);
   // delay(1000);
+
+
+  if ((rtcDtHr.hour() == 6 && rtcDtHr.minute() == 59) || 
+      (rtcDtHr.hour() == 11 && rtcDtHr.minute() == 59) || 
+      (rtcDtHr.hour() == 18 && rtcDtHr.minute() == 59)  {
+    alimentar();
+  }
 
 
   // delay anticrash
