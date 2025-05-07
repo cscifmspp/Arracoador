@@ -3,7 +3,7 @@
 #include "temperatura.h"
 #include "tdsMetter.h"
 #include "influx.h"
-
+#include "motores.h"
 
 
 void setup() {
@@ -55,6 +55,7 @@ void setup() {
 
 
   sPrato.attach(13);
+  sRosca.attach(15);
 
 
   //delay antes inicio
@@ -92,10 +93,11 @@ void loop() {
   // sPrato.write(180);
   // delay(1000);
 
+  DateTime rtcDtHr = relogio();
 
-  if ((rtcDtHr.hour() == 6 && rtcDtHr.minute() == 59) || 
-      (rtcDtHr.hour() == 11 && rtcDtHr.minute() == 59) || 
-      (rtcDtHr.hour() == 18 && rtcDtHr.minute() == 59)  {
+  if ((rtcDtHr.hour() == 6 && rtcDtHr.minute() == 59)   || 
+      (rtcDtHr.hour() == 11 && rtcDtHr.minute() == 59)  || 
+      (rtcDtHr.hour() == 18 && rtcDtHr.minute() == 59)) {
     alimentar();
   }
 
