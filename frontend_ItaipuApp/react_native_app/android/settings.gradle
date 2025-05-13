@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'spontaneous-blue-almond'
+rootProject.name = 'Arracoador_Itaipu'
 
 dependencyResolutionManagement {
   versionCatalogs {

@@ -2,6 +2,7 @@ from influxdb_client import InfluxDBClient
 from django.conf import settings
 
 def get_sensor_data():
+    print("Influx Config:", settings.INFLUXDB_SETTINGS)
     client = InfluxDBClient(
         url=settings.INFLUXDB_SETTINGS["url"],
         token=settings.INFLUXDB_SETTINGS["token"],
@@ -12,9 +13,9 @@ def get_sensor_data():
 
     query = f'''
     from(bucket: "{settings.INFLUXDB_SETTINGS["bucket"]}")
-        |> range(start: -1h)
-        |> filter(fn: (r) => r._measurement == "sensor")
-        |> filter(fn: (r) => r._field == "temperatura" or r._field == "ph")
+        |> range(start: -30d)
+        |> filter(fn: (r) => r._measurement == "arracoador")
+        |> filter(fn: (r) => r._field == "temperatura" or r._field == "tdsMetter")
         |> sort(columns: ["_time"], desc: true)
         |> limit(n: 10)
     '''

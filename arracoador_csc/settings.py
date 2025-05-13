@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "backend_arracoador",
-    "channels"
+    "channels",
+    'corsheaders'
 ]
 ASGI_APPLICATION = "arracoador_csc.asgi.application"
 
@@ -52,7 +53,9 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'corsheaders.middleware.CorsMiddleware'
 ]
+CORS_ALLOW_ALL_ORIGINS = True  # ou restrinja com CORS_ALLOWED_ORIGINS
 
 ROOT_URLCONF = "arracoador_csc.urls"
 
@@ -126,6 +129,7 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
 from dotenv import load_dotenv
 import os
 
