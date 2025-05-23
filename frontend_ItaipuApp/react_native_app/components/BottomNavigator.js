@@ -8,6 +8,7 @@ import Tanque from '../screens/Tanque';
 import Camera from '../screens/Camera';
 
 const ComoUsar = () => <View style={{flex:1, justifyContent:'center', alignItems:'center'}}><Text>Como Usar</Text></View>;
+const Conta = () => <View style={{flex:1, justifyContent:'center', alignItems:'center'}}><Text>Minha Conta</Text></View>;
 
 export default function BottomNavigator() {
   const [index, setIndex] = React.useState(0);
@@ -60,6 +61,11 @@ export default function BottomNavigator() {
       icon: 'information-outline', 
       screen: <ComoUsar />, 
       label: 'Como Usar' 
+    },
+    { 
+      icon: 'account', 
+      screen: <Conta />, 
+      label: 'Minha Conta' 
     },
   ];
 

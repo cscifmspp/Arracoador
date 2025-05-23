@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { SafeAreaView } from 'react-native';
 import { Provider as PaperProvider, MD3DarkTheme } from 'react-native-paper'; 
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import useWebSocket from "react-use-websocket";
 
 import BottomNavigatorGlass from './components/BottomNavigatorGlass';
 import Header from './components/Header';
-
-import SensorDataScreen from './screens/SensorDataScreen';
-
-
 
 export default function App() {
   const [conectado, setConectado] = useState(false);
@@ -17,7 +14,7 @@ export default function App() {
   const statusInterval = useRef();
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(
-    "ws://192.168.198.229:8000/ws/arracoador/",
+    "ws://192.168.24.229:8000/ws/arracoador/",
     {
       onOpen: () => { setConectado(true); },
       onError: () => { setConectado(false); },
@@ -54,7 +51,12 @@ export default function App() {
   );
 
   return (
-    <PaperProvider theme={MD3DarkTheme}>
+    <PaperProvider
+      theme={MD3DarkTheme}
+      settings={{
+        icon: props => <MaterialCommunityIcons {...props} />,
+      }}
+    >
       <SafeAreaView style={{ flex: 1, backgroundColor: '#121212' }}>
         <Header conectado={conectado} />
         <BottomNavigatorGlass />
