@@ -95,11 +95,11 @@ void loop() {
 
   DateTime rtcDtHr = relogio();
 
-  if ((rtcDtHr.hour() == 6 && rtcDtHr.minute() == 59)   || 
+  /*if ((rtcDtHr.hour() == 6 && rtcDtHr.minute() == 59)   || 
       (rtcDtHr.hour() == 11 && rtcDtHr.minute() == 59)  || 
-      (rtcDtHr.hour() == 18 && rtcDtHr.minute() == 59)) {
+      (rtcDtHr.hour() == 18 && rtcDtHr.minute() == 59)) {*/
     alimentar();
-  }
+  //}
 
 
   // delay anticrash
