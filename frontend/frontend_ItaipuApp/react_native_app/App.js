@@ -49,7 +49,6 @@ export default function App() {
       retryOnError: true
     }
   );
-
   return (
     <PaperProvider
       theme={MD3DarkTheme}
