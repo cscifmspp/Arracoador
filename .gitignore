@@ -1,0 +1,62 @@
+# Ignorar o ambiente virtual Python
+venv/
+*.pyc
+__pycache__/
+
+# Banco de dados local do Django
+backend/db.sqlite3
+
+# Arquivos de log
+*.log
+
+# Arquivos de backup e temporários
+*.tmp
+*.swp
+*~
+*.bak
+
+# IDEs e editores
+.vscode/
+.idea/
+
+# Node.js / React Native
+node_modules/
+*.bundle
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Build Android
+android/
+*.apk
+*.aar
+*.keystore
+
+# Build iOS
+ios/
+*.xcworkspace
+*.xcodeproj
+Pods/
+Podfile.lock
+build/
+
+# Ignorar pastas e arquivos ocultos comuns
+.DS_Store
+Thumbs.db
+
+# Arquivos binários e pacotes compactados
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Arquivos de projeto MySQL Workbench (caso não queira versionar o .mwb)
+frontend/frontend_ItaipuApp/arracoador.mwb
+
+# Arduino build outputs (caso compile localmente)
+*.hex
+*.elf
+*.bin
+
+# Pasta de build do PlatformIO (caso use)
+.pio/
