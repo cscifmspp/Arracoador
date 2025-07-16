@@ -7,10 +7,20 @@ import useWebSocket from "react-use-websocket";
 import BottomNavigatorGlass from './components/BottomNavigatorGlass';
 import Header from './components/Header';
 
+// Importação para navegação
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+// Telas de login/cadastro
+import LoginScreen from './screens/LoginScreen';
+import RegisterScreen from './screens/RegisterScreen';
+
+const Stack = createNativeStackNavigator();
+
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // novo estado
   const [conectado, setConectado] = useState(false);
   const [arracoadorId, setArracoadorId] = useState(-1);
-
   const statusInterval = useRef();
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(
@@ -21,8 +31,6 @@ export default function App() {
       onClose: () => { setConectado(false); },
       onMessage: (msg) => {
         const parsed = msg.data.split("|");
-        console.log(parsed);
-
         switch (parsed[0]) {
           case "ident":
             sendMessage("ident|1");
@@ -40,7 +48,6 @@ export default function App() {
             break;
           case "stat":
             const [, peso, tempo, servo] = parsed;
-            console.log(peso, tempo, servo);
             sendMessage("stat_ack");
             break;
         }
@@ -49,17 +56,33 @@ export default function App() {
       retryOnError: true
     }
   );
+
   return (
     <PaperProvider
       theme={MD3DarkTheme}
-      settings={{
-        icon: props => <MaterialCommunityIcons {...props} />,
-      }}
+      settings={{ icon: props => <MaterialCommunityIcons {...props} /> }}
     >
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#121212' }}>
-        <Header conectado={conectado} />
-        <BottomNavigatorGlass />
-      </SafeAreaView>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {!isAuthenticated ? (
+            <>
+              <Stack.Screen name="Login">
+                {props => <LoginScreen {...props} onLogin={() => setIsAuthenticated(true)} />}
+              </Stack.Screen>
+              <Stack.Screen name="Register" component={RegisterScreen} />
+            </>
+          ) : (
+            <Stack.Screen name="MainApp">
+              {() => (
+                <SafeAreaView style={{ flex: 1, backgroundColor: '#121212' }}>
+                  <Header conectado={conectado} />
+                  <BottomNavigatorGlass />
+                </SafeAreaView>
+              )}
+            </Stack.Screen>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
     </PaperProvider>
   );
 }

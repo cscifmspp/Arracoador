@@ -28,4 +28,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('backend_arracoador.urls')),  # ou o nome exato da sua app
+    path('api/auth/', include('backend_arracoador.urls')),
 ]
