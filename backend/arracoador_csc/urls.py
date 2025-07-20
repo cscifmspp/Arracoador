@@ -1,32 +1,8 @@
-# """
-# URL configuration for arracoador_csc project.
-
-# The `urlpatterns` list routes URLs to views. For more information please see:
-#     https://docs.djangoproject.com/en/4.2/topics/http/urls/
-# Examples:
-# Function views
-#     1. Add an import:  from my_app import views
-#     2. Add a URL to urlpatterns:  path('', views.home, name='home')
-# Class-based views
-#     1. Add an import:  from other_app.views import Home
-#     2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-# Including another URLconf
-#     1. Import the include() function: from django.urls import include, path
-#     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-# """
-# from django.contrib import admin
-# from django.urls import path
-# from backend_arracoador.views import HelloWorld
-
-# urlpatterns = [
-#     path('admin/', admin.site.urls),
-#     path('', HelloWorld),  # Rota raiz
-# ]
 from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('backend_arracoador.urls')),  # ou o nome exato da sua app
-    path('api/auth/', include('backend_arracoador.urls')),
+    path("admin/", admin.site.urls),
+    path("api/auth/", include("backend_arracoador.auth_urls")),  # Arquivo que você criou para as views de auth
+    #path("api/sensor-data/", include("backend_arracoador.sensor_urls")),  # Se tiver rotas de sensores
 ]
