@@ -1,8 +1,8 @@
 from django.apps import AppConfig
 
 class BackendArracoadorConfig(AppConfig):
-    default_auto_field = "django.db.models.BigAutoField"
-    name = "backend_arracoador"
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'backend_arracoador'
 
     def ready(self):
         import backend_arracoador.signals
