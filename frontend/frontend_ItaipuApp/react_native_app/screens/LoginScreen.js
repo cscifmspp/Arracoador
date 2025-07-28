@@ -1,3 +1,4 @@
+// LoginScreen.js
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
 import axios from 'axios';
@@ -8,17 +9,34 @@ export default function LoginScreen({ navigation, onLogin }) {
   const [mensagem, setMensagem] = useState('');
 
   const login = async () => {
-    try {
-      await axios.post('http://192.168.2.14:8000/api/auth/login/', {
-        email,
-        password
-      });
-      setMensagem('Login realizado com sucesso!');
-      onLogin();  // chama o callback que troca de tela
-    } catch (err) {
-      setMensagem('Credenciais inválidas');
+  try {
+    setMensagem('Autenticando...');
+    
+    const response = await axios.post(
+      'http://192.168.2.14:8000/api/auth/login/', 
+      { email, password },
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 10000,
+      }
+    );
+
+    setMensagem('Login realizado com sucesso!');
+    onLogin(); // Chama o callback de login bem-sucedido
+    
+  } catch (err) {
+    console.log('Erro no login:', err.response?.data || err.message);
+    
+    let errorMessage = 'Erro ao fazer login';
+    if (err.response?.data?.error) {
+      errorMessage = err.response.data.error;
+    } else if (err.message.includes('timeout')) {
+      errorMessage = 'Tempo de conexão esgotado. Verifique sua rede.';
     }
-  };
+    
+    setMensagem(errorMessage);
+  }
+};
 
   return (
     <View style={styles.container}>
