@@ -10,11 +10,15 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from datetime import timedelta
 
 # Carregar variáveis do .env uma única vez
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(dotenv_path=str(BASE_DIR / '.env'))
 
+# Configurações de URL
+BACKEND_URL = 'http://192.168.1.46:8000'  # Seu endereço local
+FRONTEND_URL = 'http://localhost:8081'  # Ou endereço do app
 # Segurança e variáveis do ambiente
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-fallback-key")
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
@@ -37,6 +41,9 @@ INSTALLED_APPS = [
 
     # apps locais
     "backend_arracoador",
+
+    #vefiricação JWT
+    'rest_framework_simplejwt'
 ]
 
 # ASGI para WebSocket
@@ -58,18 +65,23 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True  # cuidado em produção, prefira CORS_ALLOWED_ORIGINS
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8081",
-    "http://192.168.2.14:8081",
-    "exp://192.168.2.14:8081",
+    "http://192.168.1.46:8081",
+    "exp://192.168.1.46:8081",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
 # REST framework config
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        
     ],
+}
+
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
 # URLS principais

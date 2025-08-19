@@ -1,72 +1,73 @@
 import React, { useState } from 'react';
-import { BottomNavigation, Text } from 'react-native-paper';
+import { BottomNavigation } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import SensorDataScreen from '../screens/SensorDataScreen';
+import DashboardScreen from '../screens/DashboardScreen';
 import Alimentador from '../screens/Alimentador';
 import Tanque from '../screens/Tanque';
 import Camera from '../screens/Camera';
-
-const ComoUsar = () => <Text style={{ padding: 20 }}>Como Usar</Text>;
-const Conta = () => <Text style={{ padding: 20 }}>Minha Conta</Text>;
-
-
+import Controles from '../screens/Controles';
+import Configuracoes from '../screens/Configuracoes';
+//import ComoUsar from '../screens/ComoUsar'; // se for uma tela separada
 
 export default function BottomNavigatorGlass() {
-    const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(0);
 
-    const [tanques, setTanques] = useState([]);
-    const [alimentador, setAlimentador] = useState([]);
-    const [tanqueIdx, setTanqueIdx] = useState([]);
+  const [tanques, setTanques] = useState([]);
+  const [alimentador, setAlimentador] = useState([]);
+  const [tanqueIdx, setTanqueIdx] = useState([]);
 
-    const routes = [
-        { key: 'sensor', title: 'Sensores', icon: 'chart-line' },
-        { key: 'alimentador', title: 'Alimentador', icon: 'grain' },
-        { key: 'tanque', title: 'Tanque', icon: 'fishbowl-outline' },
-        { key: 'camera', title: 'Câmera', icon: 'camera-outline' },
-        { key: 'comousar', title: 'Como Usar', icon: 'information-outline' },
-        { key: 'conta', title:'Minha Conta',icon:'account' },
-    ];
+  const routes = [
+    { key: 'dashboard', title: 'Dashboard', icon: 'view-dashboard-outline' },
+    { key: 'controles', title: 'Controles', icon: 'toggle-switch-outline' },
+    //{ key: 'tanque', title: 'Tanques', icon: 'fishbowl-outline' },
+    //{ key: 'camera', title: 'Câmera', icon: 'camera-outline' },
+    //{ key: 'comousar', title: 'Como Usar', icon: 'information-outline' },
+    { key: 'configuracoes', title: 'Configurações', icon: 'account' },
+  ];
 
-    const renderScene = ({ route }) => {
-        switch (route.key) {
-            case 'sensor':
-                return <SensorDataScreen />;
-            case 'alimentador':
-                return <Alimentador alimentador={alimentador} setAlimentador={setAlimentador} />;
-            case 'tanque':
-                return (
-                    <Tanque
-                        tanques={tanques}
-                        setTanques={setTanques}
-                        tanqueIdx={tanqueIdx}
-                        setTanqueIdx={setTanqueIdx}
-                    />
-                );
-            case 'camera':
-                return <Camera />;
-            case 'comousar':
-                return <ComoUsar />;
-            case 'conta':
-                return <Conta/>;
-        }
-    };
+  const renderScene = ({ route }) => {
+    switch (route.key) {
+      case 'dashboard':
+        return <DashboardScreen />;
+      case 'controles':
+        return <Controles />;
+      /*case 'alimentador':
+        return <Alimentador alimentador={alimentador} setAlimentador={setAlimentador} />;
+      case 'tanque':
+        return (
+          <Tanque
+            tanques={tanques}
+            setTanques={setTanques}
+            tanqueIdx={tanqueIdx}
+            setTanqueIdx={setTanqueIdx}
+          />
+        );
+      case 'camera':
+        return <Camera />;
+      case 'comousar':
+        return <ComoUsar />;
+      */
+      case 'configuracoes':
+        return <Configuracoes />;
+    }
+  };
 
-    const renderIcon = ({ route, focused, color }) => (
-        <MaterialCommunityIcons
-            name={route.icon}
-            size={24}
-            color={color}
-        />
-    );
+  const renderIcon = ({ route, focused, color }) => (
+    <MaterialCommunityIcons
+      name={route.icon}
+      size={24}
+      color={color}
+    />
+  );
 
-    return (
-        <BottomNavigation
-            navigationState={{ index, routes }}
-            onIndexChange={setIndex}
-            renderScene={renderScene}
-            renderIcon={renderIcon}
-            sceneAnimationEnabled={true}
-        />
-    );
+  return (
+    <BottomNavigation
+      navigationState={{ index, routes }}
+      onIndexChange={setIndex}
+      renderScene={renderScene}
+      renderIcon={renderIcon}
+      sceneAnimationEnabled={true}
+    />
+  );
 }

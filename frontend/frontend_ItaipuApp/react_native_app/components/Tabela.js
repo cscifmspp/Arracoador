@@ -1,38 +1,38 @@
 import React from 'react';
-import { StyleSheet, Dimensions, TextInput, ScrollView, SafeAreaView } from 'react-native';
-import { DataTable, IconButton, FAB } from 'react-native-paper';
-import 'core-js/actual/structured-clone';
+import { StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { DataTable, IconButton } from 'react-native-paper';
 
 const width = Dimensions.get('window').width;
-const height = Dimensions.get('window').height;
 
-
-export default function Tabela({ header, itens, setAlimentador }) {
-  const apagar = uwu => {
-    const novo = structuredClone(itens);
-    novo.splice(uwu, 1);
-    setAlimentador(novo);
+export default function Tabela({ header = [], itens = [], setAlimentador = () => {} }) {
+  const apagar = (index) => {
+    const novosItens = [...itens];
+    novosItens.splice(index, 1);
+    setAlimentador(novosItens);
   };
 
   return (
-    <ScrollView contentContainerStyle={{ flexDirection: 'column' }}>
+    <ScrollView style={styles.scrollView}>
       <DataTable style={styles.tabela}>
         <DataTable.Header>
-          {header.map((e, index) => (
-            <DataTable.Cell key={`header-${index}`}>{e}</DataTable.Cell>
+          {header.map((titulo, index) => (
+            <DataTable.Cell key={`header-${index}`} style={styles.headerCell}>
+              {titulo}
+            </DataTable.Cell>
           ))}
         </DataTable.Header>
 
-        {itens.map((row, idx) => (
-          <DataTable.Row key={`row-${idx}`} style={{ flex: 1 }}>
-            <DataTable.Cell style={styles.celula}>{row.horario}</DataTable.Cell>
-            <DataTable.Cell style={styles.celula}>{row.status}</DataTable.Cell>
-            <DataTable.Cell style={styles.celula}>{row.gramas}</DataTable.Cell>
-            <DataTable.Cell>
+        {itens.map((item, index) => (
+          <DataTable.Row key={`row-${index}`}>
+            <DataTable.Cell style={styles.cell}>{item.horario}</DataTable.Cell>
+            <DataTable.Cell style={styles.cell}>{item.status || 'Pendente'}</DataTable.Cell>
+            <DataTable.Cell style={styles.cell}>{item.gramas}</DataTable.Cell>
+            <DataTable.Cell style={styles.cell}>
               <IconButton 
-                iconColor="#1b1d20" 
                 icon="trash-can" 
-                onPress={() => apagar(idx)} 
+                iconColor="#FF3B30"
+                size={20}
+                onPress={() => apagar(index)} 
               />
             </DataTable.Cell>
           </DataTable.Row>
@@ -43,13 +43,20 @@ export default function Tabela({ header, itens, setAlimentador }) {
 }
 
 const styles = StyleSheet.create({
-  tabela: {
-    margin: 10,
-    maxWidth: width - 20,
-    maxHeight: height - 20
+  scrollView: {
+    flex: 1,
+    marginBottom: 20,
   },
-  celula: {
-    textAlignHorizontal: 'right',
-    fontWeight:"bold"
-  }
+  tabela: {
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    elevation: 2,
+  },
+  headerCell: {
+    justifyContent: 'center',
+    fontWeight: 'bold',
+  },
+  cell: {
+    justifyContent: 'center',
+  },
 });

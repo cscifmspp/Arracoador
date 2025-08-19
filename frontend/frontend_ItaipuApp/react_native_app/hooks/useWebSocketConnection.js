@@ -5,7 +5,7 @@ import useWebSocket from 'react-use-websocket';
 export function useWebSocketConnection(setConectado, setArracoadorId) {
   const statusInterval = useRef();
 
-  const { sendMessage, lastMessage, readyState } = useWebSocket("ws://192.168.2.14:8000/ws/arracoador/", {
+  const { sendMessage, lastMessage, readyState } = useWebSocket("ws://10.0.0.111:8000/ws/arracoador/", {
     onOpen: () => setConectado(true),
     onError: () => setConectado(false),
     onClose: () => setConectado(false),

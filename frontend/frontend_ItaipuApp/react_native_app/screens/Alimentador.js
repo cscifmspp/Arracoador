@@ -1,40 +1,90 @@
 import React from 'react';
-import {StyleSheet,Dimensions,View,Text,TextInput,Button,SafeAreaView} from 'react-native';
-import { DataTable, IconButton, FAB, Icon } from 'react-native-paper';
+import { StyleSheet, Dimensions, View, Text, TextInput, Button, SafeAreaView } from 'react-native';
+import { DataTable } from 'react-native-paper';
+import Tabela from '../components/Tabela';
+import Cabecalho from '../components/Cabecalho';
 
 const width = Dimensions.get('window').width;
-const height = Dimensions.get('window').height;
 
-import Tabela from '../components/Tabela';
-import Cabecalho from '../components/Cabecalho'
+export default function Alimentador({ alimentador = [], setAlimentador = () => {} }) {
+  const [horario, setHorario] = React.useState("");
+  const [gramas, setGramas] = React.useState("");
+  const [tipo, setTipo] = React.useState("");
 
-export default function Alimentador({alimentador,setAlimentador}) {
-  const [horario,setHorario] = React.useState("");
-  const [gramas,setGramas] = React.useState("");
-  const [tipo,setTipo] = React.useState("");
   const adicionar = () => {
-    setAlimentador([...alimentador,{horario,gramas,tipo}])
-  }
+    if (horario && gramas && tipo) {
+      const novoItem = {
+        horario,
+        gramas,
+        tipo,
+        status: "Pendente" // Adicionando status padrão
+      };
+      setAlimentador([...alimentador, novoItem]);
+      setHorario("");
+      setGramas("");
+      setTipo("");
+    }
+  const navigation = useNavigation();
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+  };
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <Cabecalho txt="Gerenciar Arraçoamento" />
       <View style={styles.content}>
         <View style={styles.row}>
-          <Text style={styles.txt}>Horario</Text>
+          <Text style={styles.txt}>Horário</Text>
           <Text style={styles.txt}>Gramas</Text>
-          <Text>Tipo de Ração</Text>
+          <Text style={styles.txt}>Tipo de Ração</Text>
         </View>
         <View style={styles.row}>
-          <TextInput style={styles.inpTxt} mode="outlined" value={horario} onChangeText={novo=>{setHorario(novo)}} />
-          <TextInput style={styles.inpTxt} mode="outlined" value={gramas} onChangeText={novo=>{setGramas(novo)}} />
-          <TextInput style={styles.inpTxt} mode="outlined" value={tipo} onChangeText={novo=>{setTipo(novo)}}/>
-            <Button color={'#2C2C2C'} title="Adicionar" style={styles.btn} onPress={()=>{adicionar()}}/>
+          <TextInput 
+            style={styles.inpTxt} 
+            value={horario} 
+            onChangeText={setHorario}
+            placeholder="HH:MM"
+          />
+          <TextInput 
+            style={styles.inpTxt} 
+            value={gramas} 
+            onChangeText={setGramas}
+            keyboardType="numeric"
+            placeholder="Gramas"
+          />
+          <TextInput 
+            style={styles.inpTxt} 
+            value={tipo} 
+            onChangeText={setTipo}
+            placeholder="Tipo"
+          />
+          <Button 
+            color={'#2C2C2C'} 
+            title="Adicionar" 
+            onPress={adicionar}
+            disabled={!horario || !gramas || !tipo}
+          />
         </View>
 
-        <Tabela header={["Horario","Status","Gramas",""]} itens={alimentador} setAlimentador={setAlimentador}/>
-        <Button color={'#2C2C2C'} title="Ver Relatório" mode="outlined" />
+        <Tabela 
+          header={["Horário", "Status", "Gramas", "Ação"]} 
+          itens={alimentador} 
+          setAlimentador={setAlimentador}
+        />
+        
+        <Button 
+          color={'#2C2C2C'} 
+          title="Ver Relatório" 
+          onPress={() => console.log("Relatório")} 
+        />
       </View>
-
     </SafeAreaView>
   );
 }
@@ -48,40 +98,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   row: {
-    display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
   inpTxt: {
     width: width * 0.2,
-    height: 25,
+    height: 40,
     fontSize: 15,
-    borderRadius: 0,
     backgroundColor: '#fff',
     marginHorizontal: 3,
-    marginVertical: 10,
-    borderTopLeftRadius: 5,
-  },
-  btn: {
-    height: 25,
-    marginVertical: 10,
-    backgroundColor: '#2C2C2C',
-    border: 0,
-    color: '#ccc',
+    paddingHorizontal: 8,
     borderRadius: 5,
-  },
-  btnR: {
-    height: 25,
-    marginVertical: 10,
-    backgroundColor: '#2C2C2C',
-    border: 0,
-    color: '#ccc',
-    borderRadius: 5,
-    position: 'absolute',
-    bottom: 20,
-    right: 10,
   },
   txt: {
-    marginRight: 30,
+    width: width * 0.2,
+    marginHorizontal: 3,
+    fontWeight: 'bold',
   },
 });

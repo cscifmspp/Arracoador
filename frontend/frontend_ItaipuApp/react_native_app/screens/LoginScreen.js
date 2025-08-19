@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
 import axios from 'axios';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Config from '../config';
 export default function LoginScreen({ navigation, onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,7 +14,7 @@ export default function LoginScreen({ navigation, onLogin }) {
     setMensagem('Autenticando...');
     
     const response = await axios.post(
-      'http://192.168.2.14:8000/api/auth/login/', 
+      Config.getUrl('login'), 
       { email, password },
       {
         headers: { 'Content-Type': 'application/json' },
@@ -21,6 +22,13 @@ export default function LoginScreen({ navigation, onLogin }) {
       }
     );
 
+    // Verifique se o token existe antes de armazenar
+    if (!response.data.access) {
+      throw new Error('Token não recebido do servidor');
+    }
+
+    // Armazene o token
+    await AsyncStorage.setItem('userToken', response.data.access);
     setMensagem('Login realizado com sucesso!');
     onLogin(); // Chama o callback de login bem-sucedido
     
@@ -32,10 +40,15 @@ export default function LoginScreen({ navigation, onLogin }) {
       errorMessage = err.response.data.error;
     } else if (err.message.includes('timeout')) {
       errorMessage = 'Tempo de conexão esgotado. Verifique sua rede.';
+    } else if (err.message === 'Token não recebido do servidor') {
+      errorMessage = 'Problema na autenticação. Tente novamente.';
     }
     
     setMensagem(errorMessage);
-  }
+    // Limpe qualquer token inválido que possa estar armazenado
+    await AsyncStorage.removeItem('userToken');
+    }
+    
 };
 
   return (

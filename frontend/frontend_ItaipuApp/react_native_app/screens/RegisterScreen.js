@@ -1,91 +1,148 @@
-// RegisterScreen.js
+//RegisterScreen
 import React, { useState } from 'react';
-import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
+import { 
+  View, 
+  TextInput, 
+  Button, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  Alert,
+  Linking 
+} from 'react-native';
 import axios from 'axios';
+import * as Clipboard from 'expo-clipboard';
+import Config from '../config';
 
 export default function RegisterScreen({ navigation }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    first_name: '',
+    phone: ''
+  });
   const [mensagem, setMensagem] = useState('');
 
-  const registrar = async () => {
-  try {
-    setMensagem('Criando conta...');
-    
-    const response = await axios.post(
-      'http://192.168.2.14:8000/api/auth/register/',
-      { 
-        email: email.trim(),
-        password: password 
-      },
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000,
-      }
-    );
+  const handleChange = (name, value) => {
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
 
-    if (response.data.dev_verification_link) {
-      // Modo desenvolvimento - mostra o link no app
-      setMensagem(
-        `Conta criada! (Modo desenvolvimento)\n` +
-        `Link de verificação: ${response.data.dev_verification_link}\n\n` +
-        `Copie este link e abra no navegador para ativar sua conta.`
-      );
-    } else {
-      setMensagem(
-        'Conta criada com sucesso!\n' +
-        'Verifique seu e-mail (incluindo a pasta de spam) para ativar sua conta.'
-      );
-    }
-  } catch (err) {
-    let errorMessage = 'Erro ao cadastrar';
-    
-    if (err.response) {
-      if (err.response.data?.error === "Email já cadastrado") {
-        errorMessage = 'Este e-mail já está cadastrado. Tente fazer login ou use outro e-mail.';
-      } else if (err.response.data?.error) {
-        errorMessage = err.response.data.error;
+  const registrar = async () => {
+    try {
+        setMensagem('Criando conta...');
+        
+        const response = await axios.post(
+            Config.getUrl('register'),
+            { 
+                email: formData.email.trim(),
+                password: formData.password,
+                first_name: formData.first_name,
+                phone: formData.phone
+            },
+            {
+                headers: { 'Content-Type': 'application/json' },
+                timeout: 10000,
+            }
+        );
+
+        // SEMPRE mostra o link em desenvolvimento
+        if (response.data.dev_link) {
+            Alert.alert(
+                'Conta criada com sucesso!',
+                `Copie o link abaixo para ativar sua conta:\n\n${response.data.dev_link}`,
+                [
+                    { 
+                        text: 'Copiar Link', 
+                        onPress: () => Clipboard.setStringAsync(response.data.dev_link) 
+                    },
+                    { 
+                        text: 'Abrir no Navegador', 
+                        onPress: () => Linking.openURL(response.data.dev_link) 
+                    },
+                    { text: 'OK' }
+                ]
+            );
+        } else {
+            Alert.alert(
+                'Sucesso',
+                'Verifique seu e-mail para ativar sua conta'
+            );
+        }
+        
+        setMensagem(response.data.message);
+        
+    } catch (err) {
+        let errorMessage = 'Erro ao cadastrar';
+        
+        if (err.response?.data?.error) {
+            errorMessage = err.response.data.error;
+        } else if (err.response?.data?.message) {
+            errorMessage = err.response.data.message;
+        } else if (err.message.includes('timeout')) {
+            errorMessage = 'Servidor não respondeu. Verifique sua conexão.';
+        } else if (err.message.includes('Network Error')) {
+            errorMessage = 'Erro de rede. Verifique se o servidor está rodando.';
+        }
+        
+        setMensagem(errorMessage);
+        console.error('Erro detalhado:', err.response?.data || err.message);
       }
-    } else if (err.message.includes('timeout')) {
-      errorMessage = 'Servidor demorou para responder. Verifique sua conexão.';
-    }
-    
-    setMensagem(errorMessage);
-    console.error('Erro detalhado:', err.response?.data || err.message);
-  }
-};
+  };
+
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Cadastro</Text>
+      
+      <TextInput
+        placeholder="Nome Completo"
+        value={formData.first_name}
+        onChangeText={(text) => handleChange('first_name', text)}
+        style={styles.input}
+      />
+      
       <TextInput
         placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
+        value={formData.email}
+        onChangeText={(text) => handleChange('email', text)}
         style={styles.input}
         keyboardType="email-address"
         autoCapitalize="none"
       />
+      
       <TextInput
         placeholder="Senha"
-        value={password}
-        onChangeText={setPassword}
+        value={formData.password}
+        onChangeText={(text) => handleChange('password', text)}
         style={styles.input}
         secureTextEntry
       />
+      
+      <TextInput
+        placeholder="Telefone"
+        value={formData.phone}
+        onChangeText={(text) => handleChange('phone', text)}
+        style={styles.input}
+        keyboardType="phone-pad"
+      />
+
       <Button title="Cadastrar" onPress={registrar} />
+      
       <Text style={styles.message}>{mensagem}</Text>
 
       <Text style={styles.link} onPress={() => navigation.navigate('Login')}>
         Já tem uma conta? Entrar
       </Text>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     backgroundColor: '#121212'
   },

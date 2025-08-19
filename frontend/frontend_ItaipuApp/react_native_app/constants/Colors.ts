@@ -1,26 +1,35 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
-
-export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-  },
+// Cores estáticas que não mudam com o tema
+export const StaticColors = {
+  primary: "#007C91",
+  secondary: "#A4FF73",
+  accent: "#B2EBF2",
+  danger: "#FF5E5E",
+  success: "#A4FF73",
 };
+
+// Temas claro e escuro
+export const lightTheme = {
+  ...StaticColors,
+  dark: false,
+  background: "#F5F5F5",
+  surface: "#FFFFFF",
+  textPrimary: "#333333",
+  textSecondary: "#666666",
+  border: "#E0E0E0",
+};
+
+export const darkTheme = {
+  ...StaticColors,
+  dark: true,
+  background: "#2F2F2F",
+  surface: "#3C3C3C",
+  textPrimary: "#F4F9F9",
+  textSecondary: "#B2EBF2",
+  border: "#444",
+};
+
+// Exportando o tema escuro como padrão para compatibilidade
+const Colors = darkTheme;
+export default Colors;
+
+// Remova o hook useColors deste arquivo - ele deve ficar no ThemeContext

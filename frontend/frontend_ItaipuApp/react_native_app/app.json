@@ -27,6 +27,16 @@
     },
     "web": {
       "favicon": "./assets/logoItaipu.png"
-    }
+    },
+    "plugins": [
+      "expo-font",
+    [
+    "expo-image-picker",
+      {
+        "photosPermission": "Permite acessar suas fotos para alterar a imagem de perfil.",
+        "cameraPermission": "Permite tirar fotos para usar como imagem de perfil."
+      }
+  ]
+]
   }
 }
