@@ -1,25 +1,26 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// Importações de telas...
+// Importações de telas
 import DashboardScreen from '../screens/DashboardScreen';
 import ControlesScreen from '../screens/ControlesScreen';
 import FloatingDock from '../components/FloatingDock';
 import Alimentador from '../screens/Alimentador';
 import Camera from '../screens/Camera';
 import RegisterScreen from '../screens/RegisterScreen';
-import LoginScreen from  '../screens/LoginScreen';
+import LoginScreen from '../screens/LoginScreen';
 import Tanque from '../screens/Tanque';
 import ContaScreen from '../screens/ContaScreen';
 import EditarContaScreen from '../screens/EditarContaScreen';
+
 const Stack = createNativeStackNavigator();
 
-function MainScreen({ component: Component }) {
+function MainScreen({ component: Component, ...props }) {
   return (
     <View style={styles.container}>
-      <Component />
+      <Component {...props} />
       <FloatingDock />
     </View>
   );
@@ -32,28 +33,33 @@ export default function AppNavigation({ isAuthenticated, setIsAuthenticated }) {
         {!isAuthenticated ? (
           <>
             <Stack.Screen name="Login">
-              {props => <LoginScreen {...props} onLogin={() => setIsAuthenticated(true)} />}
+              {(props) => (
+                <LoginScreen
+                  {...props}
+                  onLogin={() => setIsAuthenticated(true)}
+                />
+              )}
             </Stack.Screen>
             <Stack.Screen name="Register" component={RegisterScreen} />
           </>
         ) : (
           <>
             <Stack.Screen name="Dashboard">
-              {() => <MainScreen component={DashboardScreen} />}
+              {(props) => <MainScreen component={DashboardScreen} {...props} />}
             </Stack.Screen>
             <Stack.Screen name="Controles">
-              {() => <MainScreen component={ControlesScreen} />}
+              {(props) => <MainScreen component={ControlesScreen} {...props} />}
             </Stack.Screen>
             <Stack.Screen name="Conta">
-            {() => <MainScreen component={ContaScreen} />}
+              {(props) => <MainScreen component={ContaScreen} {...props} />}
             </Stack.Screen>
             <Stack.Screen name="Tanque">
-              {() => <MainScreen component={Tanque} />}
+              {(props) => <MainScreen component={Tanque} {...props} />}
             </Stack.Screen>
             <Stack.Screen name="Alimentador" component={Alimentador} />
             <Stack.Screen name="Camera" component={Camera} />
-            <Stack.Screen name = "EditarConta">
-              {() => <MainScreen component={EditarContaScreen} />}
+            <Stack.Screen name="EditarConta">
+              {(props) => <MainScreen component={EditarContaScreen} {...props} />}
             </Stack.Screen>
           </>
         )}

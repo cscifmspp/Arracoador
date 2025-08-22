@@ -1,173 +1,225 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Avatar, Text, Button, Divider, Switch } from 'react-native-paper';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, Alert, Image, TouchableOpacity, Switch } from 'react-native';
+import { Text, Card, Button, Avatar, ActivityIndicator } from 'react-native-paper';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// CORREÇÃO DEFINITIVA - URL BASE
-const API_BASE = "http://192.168.2.14:8000"; // SEM /api no final
-const PROFILE_URL = `${API_BASE}/profile/`; // Corrigido para sua estrutura real
+import { useFocusEffect } from '@react-navigation/native';
+import Config from '../config';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export default function ContaScreen() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, isDark } = useTheme();
   const navigation = useNavigation();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState({
-    name: 'Carregando...',
-    email: 'carregando...',
-    phone: ''
+    nome: '',
+    email: '',
+    telefone: '',
+    foto: null
   });
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        if (!token) {
-          Alert.alert('Erro', 'Sessão expirada. Faça login novamente.');
-          navigation.navigate('Login');
-          return;
-        }
-
-        console.log('Fetching profile from:', PROFILE_URL);
-        
-        const response = await fetch(PROFILE_URL, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log('Status da resposta:', response.status);
-        
-        // Verifica se a resposta não é JSON válido (erro 404)
-        const text = await response.text();
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
-          console.error('Resposta não é JSON:', text);
-          throw new Error(`Resposta inválida do servidor: ${text}`);
-        }
-        
-        if (!response.ok) {
-          console.error('Erro detalhado:', data);
-          throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        console.log('Dados recebidos:', data);
-        
-        setUserData({
-          name: data.first_name || data.nome || 'Usuário',
-          email: data.email || 'Sem email cadastrado',
-          phone: data.phone || data.telefone || ''
-        });
-      } catch (error) {
-        console.error('Erro ao buscar dados:', error);
-        Alert.alert('Erro', error.message || 'Não foi possível carregar os dados do usuário');
+  const loadProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = await Config.getAuthToken();
+      
+      if (!token) {
+        navigation.navigate('Login');
+        return;
       }
-    };
 
-    fetchUserData();
+      const response = await fetch(Config.getUrl('profile'), {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        await Config.removeAuthToken();
+        navigation.navigate('Login');
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      setUserData({
+        nome: data.nome || data.first_name || '',
+        email: data.email || '',
+        telefone: data.telefone || data.phone || '',
+        foto: data.foto_perfil || data.profile_photo || null,
+      });
+    } catch (error) {
+      console.error('Erro ao carregar perfil:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os dados do perfil');
+    } finally {
+      setLoading(false);
+    }
   }, [navigation]);
 
+  // Recarregar dados quando a tela receber foco
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile])
+  );
+
+  const handleLogout = async () => {
+    try {
+      await Config.removeAuthToken();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
+  };
+
+  const handleToggleNotifications = () => {
+    setNotificationsEnabled(prev => !prev);
+    Alert.alert(
+      'Notificações',
+      notificationsEnabled ? 'Notificações desativadas' : 'Notificações ativadas'
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+        <ActivityIndicator animating={true} size="large" color={theme.primary} />
+        <Text style={{ color: theme.textPrimary, marginTop: 10 }}>Carregando perfil...</Text>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Seção de Perfil */}
-     <View style={styles.profileSection}>
-      <Avatar.Icon 
-        size={80} 
-        icon="account" 
-        style={{ backgroundColor: theme.primary }} 
-      />
-      <Text style={[styles.userName, { color: theme.textPrimary }]}>
-        {userData.name}
-      </Text>
-      <Text style={[styles.userEmail, { color: theme.textSecondary }]}>
-        {userData.email}
-      </Text>
-      
-  <Button 
-    mode="outlined" 
-    onPress={() => navigation.navigate('EditarConta')}
-    style={styles.editButton}
-    labelStyle={{ color: theme.primary }}
-  >
-    Editar Perfil
-  </Button>
-</View>
-      <Divider style={[styles.divider, { backgroundColor: theme.border }]} />
-
-      {/* Configurações da Conta */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Configurações da Conta</Text>
-        
-        <View style={styles.settingItem}>
-          <Text style={[styles.settingText, { color: theme.textPrimary }]}>Notificações</Text>
-          <Switch 
-            value={notificationsEnabled} 
-            onValueChange={() => setNotificationsEnabled(!notificationsEnabled)}
-            color={theme.primary}
+    <ScrollView 
+      style={[styles.container, { backgroundColor: theme.background }]}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <View style={styles.avatarContainer}>
+        {userData.foto ? (
+          <Image 
+            source={{ uri: userData.foto + `?t=${Date.now()}` }}
+            style={[styles.avatar, { borderColor: theme.primary }]}
+            onError={() => {
+              setUserData(prev => ({ ...prev, foto: null }));
+            }}
           />
-        </View>
-
-        <View style={styles.settingItem}>
-          <Text style={[styles.settingText, { color: theme.textPrimary }]}>Tema Escuro</Text>
-          <Switch 
-            value={theme.dark} 
-            onValueChange={toggleTheme}
-            color={theme.primary}
+        ) : (
+          <Avatar.Icon 
+            size={120} 
+            icon="account" 
+            style={{ backgroundColor: theme.primary }} 
           />
-        </View>
-
-        <Button 
-          mode="text" 
-          onPress={() => navigation.navigate('AlterarSenha')}
-          style={styles.textButton}
-          labelStyle={{ color: theme.primary }}
-        >
-          Alterar Senha
-        </Button>
+        )}
+        <Text style={[styles.userName, { color: theme.textPrimary }]}>
+          {userData.nome}
+        </Text>
       </View>
 
-      <Divider style={[styles.divider, { backgroundColor: theme.border }]} />
+      <Card style={[styles.card, { backgroundColor: theme.surface }]}>
+        <Card.Title
+          title="Informações Pessoais"
+          titleStyle={{ color: theme.textPrimary }}
+          left={(props) => (
+            <Avatar.Icon 
+              {...props} 
+              icon="account-details" 
+              style={{ backgroundColor: theme.primary }} 
+            />
+          )}
+        />
+        <Card.Content>
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="email" size={20} color={theme.textSecondary} />
+            <Text style={[styles.infoText, { color: theme.textPrimary }]}>
+              {userData.email}
+            </Text>
+          </View>
+          
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="phone" size={20} color={theme.textSecondary} />
+            <Text style={[styles.infoText, { color: theme.textPrimary }]}>
+              {userData.telefone || 'Não informado'}
+            </Text>
+          </View>
+        </Card.Content>
+      </Card>
 
-      {/* Configurações do Sistema */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Sistema</Text>
-        
-        <Button 
-          mode="text" 
-          onPress={() => navigation.navigate('Sobre')}
-          style={styles.textButton}
-          labelStyle={{ color: theme.textPrimary }}
-        >
-          Sobre o Aplicativo
-        </Button>
+      <Card style={[styles.card, { backgroundColor: theme.surface }]}>
+        <Card.Title
+          title="Preferências"
+          titleStyle={{ color: theme.textPrimary }}
+          left={(props) => (
+            <Avatar.Icon 
+              {...props} 
+              icon="cog" 
+              style={{ backgroundColor: theme.primary }} 
+            />
+          )}
+        />
+        <Card.Content>
+          <View style={styles.preferenceRow}>
+            <View style={styles.preferenceInfo}>
+              <MaterialCommunityIcons name="bell" size={20} color={theme.textPrimary} />
+              <Text style={[styles.preferenceText, { color: theme.textPrimary }]}>
+                Notificações
+              </Text>
+            </View>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={handleToggleNotifications}
+              thumbColor={notificationsEnabled ? theme.primary : '#f4f3f4'}
+              trackColor={{ false: '#767577', true: theme.primary + '80' }}
+            />
+          </View>
 
-        <Button 
-          mode="text" 
-          onPress={() => navigation.navigate('Termos')}
-          style={styles.textButton}
-          labelStyle={{ color: theme.textPrimary }}
-        >
-          Termos de Uso
-        </Button>
-      </View>
+          <View style={styles.preferenceRow}>
+            <View style={styles.preferenceInfo}>
+              <MaterialCommunityIcons 
+                name={isDark ? "weather-night" : "weather-sunny"} 
+                size={20} 
+                color={theme.textPrimary} 
+              />
+              <Text style={[styles.preferenceText, { color: theme.textPrimary }]}>
+                Modo Noturno
+              </Text>
+            </View>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              thumbColor={isDark ? theme.primary : '#f4f3f4'}
+              trackColor={{ false: '#767577', true: theme.primary + '80' }}
+            />
+          </View>
+        </Card.Content>
+      </Card>
 
-      <Divider style={[styles.divider, { backgroundColor: theme.border }]} />
+      <Button 
+        mode="contained" 
+        onPress={() => navigation.navigate('EditarConta')}
+        style={[styles.editButton, { backgroundColor: theme.primary }]}
+        labelStyle={{ color: 'white' }}
+        icon="account-edit"
+      >
+        Editar Perfil
+      </Button>
 
-      {/* Sessão de Logout */}
-      <View style={styles.section}>
-        <Button 
-          mode="contained" 
-          onPress={() => navigation.navigate('Login')}
-          style={[styles.logoutButton, { backgroundColor: theme.danger }]}
-          labelStyle={{ color: '#FFF' }}
-        >
-          Sair da Conta
-        </Button>
-      </View>
+      <Button 
+        mode="outlined" 
+        onPress={handleLogout}
+        style={[styles.logoutButton, { borderColor: theme.error }]}
+        labelStyle={{ color: theme.error }}
+        icon="logout"
+      >
+        Sair
+      </Button>
     </ScrollView>
   );
 }
@@ -175,49 +227,69 @@ export default function ContaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
   },
-  profileSection: {
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    marginVertical: 30,
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
   },
   userName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 10,
+    fontSize: 24,
+    fontFamily: 'Inter_700Bold',
+    marginTop: 15,
+    textAlign: 'center',
   },
-  userEmail: {
-    fontSize: 16,
-    marginBottom: 15,
-  },
-  editButton: {
-    marginTop: 10,
-    borderColor: '#007C91',
-  },
-  divider: {
-    marginVertical: 15,
-  },
-  section: {
+  card: {
+    borderRadius: 16,
     marginBottom: 20,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
-  settingItem: {
+  infoRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    marginBottom: 15,
+    paddingHorizontal: 10,
   },
-  settingText: {
+  infoText: {
     fontSize: 16,
+    marginLeft: 10,
+    flex: 1,
   },
-  textButton: {
-    justifyContent: 'flex-start',
+  preferenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+    paddingHorizontal: 10,
+  },
+  preferenceInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  preferenceText: {
+    fontSize: 16,
+    marginLeft: 10,
+  },
+  editButton: {
+    borderRadius: 8,
+    marginBottom: 15,
+    paddingVertical: 6,
   },
   logoutButton: {
-    marginTop: 10,
+    borderRadius: 8,
   },
 });

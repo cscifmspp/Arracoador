@@ -1,15 +1,17 @@
-import React from 'react';
-import { StyleSheet, Dimensions, View, Text, TextInput, Button, SafeAreaView } from 'react-native';
-import { DataTable } from 'react-native-paper';
-import Tabela from '../components/Tabela';
-import Cabecalho from '../components/Cabecalho';
+import React, { useState } from 'react';
+import { View, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
+import { Text, Card, Button, DataTable, Avatar, TouchableRipple } from 'react-native-paper';
+import { useTheme } from '../context/ThemeContext';
+import { useNavigation } from '@react-navigation/native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const width = Dimensions.get('window').width;
-
-export default function Alimentador({ alimentador = [], setAlimentador = () => {} }) {
-  const [horario, setHorario] = React.useState("");
-  const [gramas, setGramas] = React.useState("");
-  const [tipo, setTipo] = React.useState("");
+export default function Alimentador() {
+  const { theme } = useTheme();
+  const navigation = useNavigation();
+  const [alimentador, setAlimentador] = useState([]);
+  const [horario, setHorario] = useState("");
+  const [gramas, setGramas] = useState("");
+  const [tipo, setTipo] = useState("");
 
   const adicionar = () => {
     if (horario && gramas && tipo) {
@@ -17,104 +19,197 @@ export default function Alimentador({ alimentador = [], setAlimentador = () => {
         horario,
         gramas,
         tipo,
-        status: "Pendente" // Adicionando status padrão
+        status: "Pendente",
+        id: Date.now().toString()
       };
       setAlimentador([...alimentador, novoItem]);
       setHorario("");
       setGramas("");
       setTipo("");
+      Alert.alert("Sucesso", "Alimentação programada com sucesso!");
+    } else {
+      Alert.alert("Atenção", "Preencha todos os campos");
     }
-  const navigation = useNavigation();
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
+  };
+
+  const removerItem = (id) => {
+    setAlimentador(alimentador.filter(item => item.id !== id));
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <Cabecalho txt="Gerenciar Arraçoamento" />
-      <View style={styles.content}>
-        <View style={styles.row}>
-          <Text style={styles.txt}>Horário</Text>
-          <Text style={styles.txt}>Gramas</Text>
-          <Text style={styles.txt}>Tipo de Ração</Text>
-        </View>
-        <View style={styles.row}>
-          <TextInput 
-            style={styles.inpTxt} 
-            value={horario} 
-            onChangeText={setHorario}
-            placeholder="HH:MM"
-          />
-          <TextInput 
-            style={styles.inpTxt} 
-            value={gramas} 
-            onChangeText={setGramas}
-            keyboardType="numeric"
-            placeholder="Gramas"
-          />
-          <TextInput 
-            style={styles.inpTxt} 
-            value={tipo} 
-            onChangeText={setTipo}
-            placeholder="Tipo"
-          />
-          <Button 
-            color={'#2C2C2C'} 
-            title="Adicionar" 
-            onPress={adicionar}
-            disabled={!horario || !gramas || !tipo}
-          />
-        </View>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <TouchableRipple onPress={() => navigation.goBack()} style={styles.backButton}>
+        <MaterialCommunityIcons name="arrow-left" size={24} color={theme.textPrimary} />
+      </TouchableRipple>
 
-        <Tabela 
-          header={["Horário", "Status", "Gramas", "Ação"]} 
-          itens={alimentador} 
-          setAlimentador={setAlimentador}
+      <Text style={[styles.title, { color: theme.textPrimary }]}>Gerenciar Alimentação</Text>
+
+      <Card style={[styles.card, { backgroundColor: theme.surface }]}>
+        <Card.Title
+          title="Nova Programação"
+          titleStyle={{ color: theme.textPrimary }}
+          left={(props) => (
+            <Avatar.Icon 
+              {...props} 
+              icon="plus" 
+              style={{ backgroundColor: theme.primary }} 
+            />
+          )}
         />
-        
-        <Button 
-          color={'#2C2C2C'} 
-          title="Ver Relatório" 
-          onPress={() => console.log("Relatório")} 
+        <Card.Content>
+          <View style={styles.inputRow}>
+            <TextInput
+              style={[styles.input, { 
+                backgroundColor: theme.background, 
+                color: theme.textPrimary,
+                borderColor: theme.border 
+              }]}
+              placeholder="HH:MM"
+              placeholderTextColor={theme.textSecondary}
+              value={horario}
+              onChangeText={setHorario}
+            />
+            <TextInput
+              style={[styles.input, { 
+                backgroundColor: theme.background, 
+                color: theme.textPrimary,
+                borderColor: theme.border 
+              }]}
+              placeholder="Gramas"
+              placeholderTextColor={theme.textSecondary}
+              value={gramas}
+              onChangeText={setGramas}
+              keyboardType="numeric"
+            />
+            <TextInput
+              style={[styles.input, { 
+                backgroundColor: theme.background, 
+                color: theme.textPrimary,
+                borderColor: theme.border 
+              }]}
+              placeholder="Tipo de ração"
+              placeholderTextColor={theme.textSecondary}
+              value={tipo}
+              onChangeText={setTipo}
+            />
+          </View>
+          <Button
+            mode="contained"
+            onPress={adicionar}
+            style={[styles.addButton, { backgroundColor: theme.primary }]}
+            disabled={!horario || !gramas || !tipo}
+          >
+            Adicionar
+          </Button>
+        </Card.Content>
+      </Card>
+
+      <Card style={[styles.card, { backgroundColor: theme.surface }]}>
+        <Card.Title
+          title="Programações Ativas"
+          titleStyle={{ color: theme.textPrimary }}
+          left={(props) => (
+            <Avatar.Icon 
+              {...props} 
+              icon="clock" 
+              style={{ backgroundColor: theme.primary }} 
+            />
+          )}
         />
-      </View>
-    </SafeAreaView>
+        <Card.Content>
+          {alimentador.length === 0 ? (
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+              Nenhuma programação cadastrada
+            </Text>
+          ) : (
+            <DataTable>
+              <DataTable.Header>
+                <DataTable.Title textStyle={{ color: theme.textPrimary }}>Horário</DataTable.Title>
+                <DataTable.Title textStyle={{ color: theme.textPrimary }}>Gramas</DataTable.Title>
+                <DataTable.Title textStyle={{ color: theme.textPrimary }}>Tipo</DataTable.Title>
+                <DataTable.Title textStyle={{ color: theme.textPrimary }}>Ação</DataTable.Title>
+              </DataTable.Header>
+
+              {alimentador.map((item) => (
+                <DataTable.Row key={item.id}>
+                  <DataTable.Cell textStyle={{ color: theme.textPrimary }}>{item.horario}</DataTable.Cell>
+                  <DataTable.Cell textStyle={{ color: theme.textPrimary }}>{item.gramas}g</DataTable.Cell>
+                  <DataTable.Cell textStyle={{ color: theme.textPrimary }}>{item.tipo}</DataTable.Cell>
+                  <DataTable.Cell>
+                    <Button
+                      mode="text"
+                      onPress={() => removerItem(item.id)}
+                      textColor={theme.error}
+                    >
+                      Remover
+                    </Button>
+                  </DataTable.Cell>
+                </DataTable.Row>
+              ))}
+            </DataTable>
+          )}
+        </Card.Content>
+      </Card>
+
+      <Button
+        mode="outlined"
+        onPress={() => console.log("Relatório")}
+        style={[styles.reportButton, { borderColor: theme.primary }]}
+        textColor={theme.primary}
+        icon="chart-bar"
+      >
+        Ver Relatório
+      </Button>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    margin: 10,
-    backgroundColor: '#A4D6A6',
-    borderRadius: 5,
-    padding: 10,
+  container: {
     flex: 1,
+    padding: 20,
   },
-  row: {
+  backButton: {
+    alignSelf: 'flex-start',
+    marginTop: 50,
+    padding: 8,
+    borderRadius: 20,
+  },
+  title: {
+    fontSize: 26,
+    fontFamily: 'Inter_700Bold',
+    marginTop: 20,
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  card: {
+    borderRadius: 16,
+    marginBottom: 20,
+  },
+  inputRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 15,
+    gap: 10,
   },
-  inpTxt: {
-    width: width * 0.2,
+  input: {
+    flex: 1,
     height: 40,
-    fontSize: 15,
-    backgroundColor: '#fff',
-    marginHorizontal: 3,
-    paddingHorizontal: 8,
-    borderRadius: 5,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 14,
   },
-  txt: {
-    width: width * 0.2,
-    marginHorizontal: 3,
-    fontWeight: 'bold',
+  addButton: {
+    borderRadius: 8,
+  },
+  emptyText: {
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginVertical: 20,
+  },
+  reportButton: {
+    borderRadius: 8,
+    marginTop: 10,
   },
 });

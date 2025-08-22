@@ -20,7 +20,14 @@ export default function ControlesScreen() {
       icon: 'camera',
       description: 'Visualização da câmera ao vivo',
       screen: 'Camera'
+    },
+    {
+      name:'Tanques',
+      icon:'fishbowl',
+      description:'Controle dos Tanques',
+      screen:'Tanque'
     }
+
   ];
 
   return (

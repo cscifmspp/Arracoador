@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, Image, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {View,StyleSheet,ScrollView,Alert,Image,TouchableOpacity,RefreshControl} from 'react-native';
 import { TextInput, Button, Text, Avatar, ActivityIndicator } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../context/ThemeContext';
-import Config from '../config'; // Importação do arquivo de configuração
+import Config from '../config';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function EditarContaScreen({ navigation }) {
   const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [userData, setUserData] = useState({
     nome: '',
     email: '',
@@ -15,73 +17,144 @@ export default function EditarContaScreen({ navigation }) {
     foto: null
   });
 
-  // Carrega os dados do perfil ao iniciar
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        setLoading(true);
-        const token = await Config.getAuthToken();
-        
-        if (!token) {
-          navigation.navigate('Login');
-          return;
-        }
-
-        const response = await fetch(Config.getUrl('profile'), {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Erro HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        setUserData({
-          nome: data.nome || data.first_name || '',
-          email: data.email || '',
-          telefone: data.telefone || data.phone || '',
-          foto: data.foto_perfil || data.profile_photo || null,
-        });
-      } catch (error) {
-        console.error('Erro ao carregar perfil:', error);
-        Alert.alert('Erro', 'Não foi possível carregar os dados do perfil');
-      } finally {
-        setLoading(false);
+  const loadProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = await Config.getAuthToken();
+      
+      if (!token) {
+        navigation.navigate('Login');
+        return;
       }
-    };
 
-    loadProfile();
+      const response = await fetch(Config.getUrl('profile'), {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        await Config.removeAuthToken();
+        navigation.navigate('Login');
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      setUserData({
+        nome: data.nome || data.first_name || '',
+        email: data.email || '',
+        telefone: data.telefone || data.phone || '',
+        foto: data.foto_perfil || data.profile_photo || null,
+      });
+    } catch (error) {
+      console.error('Erro ao carregar perfil:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os dados do perfil');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [navigation]);
 
-  // Seleciona imagem da galeria
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile])
+  );
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadProfile();
+  }, [loadProfile]);
+
+  // FUNÇÃO CORRIGIDA - COMPATÍVEL COM TODAS VERSÕES
   const handleImagePick = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
+      console.log('Solicitando permissões...');
+      
+      // Solicitar permissões
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('Resultado da permissão:', permissionResult);
+      
+      if (permissionResult.status !== 'granted') {
         Alert.alert('Permissão necessária', 'Precisamos acessar sua galeria para alterar a foto');
         return;
       }
 
+      console.log('Abrindo galeria...');
+      
+      // Método universalmente compatível
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        // Usando a abordagem mais compatível
+        mediaTypes: 'images', // String simples que funciona em todas versões
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
 
-      if (!result.canceled) {
-        setUserData({ ...userData, foto: result.assets[0].uri });
+      console.log('Resultado completo:', result);
+
+      if (result.canceled) {
+        console.log('Usuário cancelou a seleção');
+        return;
       }
+
+      // Extrair a URI da imagem de forma compatível
+      let imageUri;
+      
+      // Para versões mais novas (assets array)
+      if (result.assets && result.assets.length > 0) {
+        imageUri = result.assets[0].uri;
+      } 
+      // Para versões mais antigas (uri direta)
+      else if (result.uri) {
+        imageUri = result.uri;
+      }
+
+      console.log('URI da imagem selecionada:', imageUri);
+
+      if (imageUri) {
+        setUserData(prev => ({ ...prev, foto: imageUri }));
+        Alert.alert('Sucesso', 'Imagem selecionada com sucesso!');
+      } else {
+        throw new Error('Não foi possível obter a URI da imagem');
+      }
+
     } catch (error) {
-      console.error('Erro ao selecionar imagem:', error);
-      Alert.alert('Erro', 'Não foi possível selecionar a imagem');
+      console.error('Erro detalhado ao selecionar imagem:', error);
+      
+      // Tentativa alternativa EXTRA segura
+      try {
+        console.log('Tentando método ultra compatível...');
+        const fallbackResult = await ImagePicker.launchImageLibraryAsync({
+          // Opções mínimas e mais compatíveis
+          allowsEditing: true,
+          quality: 0.8,
+        });
+
+        console.log('Resultado fallback:', fallbackResult);
+
+        if (!fallbackResult.canceled) {
+          const fallbackUri = fallbackResult.uri || 
+                            (fallbackResult.assets && fallbackResult.assets[0]?.uri);
+          if (fallbackUri) {
+            setUserData(prev => ({ ...prev, foto: fallbackUri }));
+            Alert.alert('Sucesso', 'Imagem selecionada com sucesso!');
+            return;
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Erro no fallback:', fallbackError);
+      }
+      
+      Alert.alert('Erro', 'Não foi possível selecionar a imagem. Tente novamente.');
     }
   };
 
-  // Salva as alterações no perfil
   const handleSave = async () => {
     if (!userData.nome.trim()) {
       Alert.alert('Erro', 'O nome é obrigatório');
@@ -98,23 +171,25 @@ export default function EditarContaScreen({ navigation }) {
       }
 
       const formData = new FormData();
-      formData.append('first_name', userData.nome);
-      formData.append('nome', userData.nome);
-      formData.append('email', userData.email);
+      formData.append('first_name', userData.nome.trim());
+      formData.append('nome', userData.nome.trim());
+      formData.append('email', userData.email.trim());
       
       if (userData.telefone) {
-        formData.append('phone', userData.telefone);
-        formData.append('telefone', userData.telefone);
+        formData.append('phone', userData.telefone.trim());
+        formData.append('telefone', userData.telefone.trim());
       }
 
       if (userData.foto && userData.foto.startsWith('file:')) {
+        console.log('Enviando imagem:', userData.foto);
         formData.append('foto_perfil', {
           uri: userData.foto,
           type: 'image/jpeg',
-          name: 'profile.jpg',
+          name: `profile_${Date.now()}.jpg`,
         });
       }
 
+      console.log('Enviando dados para atualização de perfil...');
       const response = await fetch(Config.getUrl('profileUpdate'), {
         method: 'POST',
         headers: {
@@ -124,23 +199,38 @@ export default function EditarContaScreen({ navigation }) {
         body: formData,
       });
 
-      // Verifica se a resposta é JSON válido
-      const contentType = response.headers.get('content-type');
+      if (response.status === 401) {
+        await Config.removeAuthToken();
+        navigation.navigate('Login');
+        return;
+      }
+
+      const responseText = await response.text();
+      console.log('Resposta bruta do servidor:', responseText);
+      
       let responseData;
       
-      if (contentType && contentType.includes('application/json')) {
-        responseData = await response.json();
-      } else {
-        const text = await response.text();
-        throw new Error(`Resposta inválida: ${text}`);
+      try {
+        responseData = JSON.parse(responseText);
+        console.log('Dados parseados:', responseData);
+      } catch {
+        console.error('Não foi possível parsear JSON:', responseText);
+        throw new Error(`Resposta inválida do servidor: ${responseText}`);
       }
 
       if (!response.ok) {
         throw new Error(responseData.error || responseData.message || 'Erro ao atualizar perfil');
       }
 
-      Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
-      navigation.goBack();
+      Alert.alert('Sucesso', 'Perfil atualizado com sucesso!', [
+        { 
+          text: 'OK', 
+          onPress: () => {
+            navigation.navigate('Conta', { refresh: Date.now() });
+          }
+        }
+      ]);
+      
     } catch (error) {
       console.error('Erro ao atualizar:', error);
       Alert.alert('Erro', error.message || 'Falha ao atualizar perfil');
@@ -149,10 +239,11 @@ export default function EditarContaScreen({ navigation }) {
     }
   };
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
         <ActivityIndicator animating={true} size="large" color={theme.primary} />
+        <Text style={{ color: theme.textPrimary, marginTop: 10 }}>Carregando perfil...</Text>
       </View>
     );
   }
@@ -161,13 +252,24 @@ export default function EditarContaScreen({ navigation }) {
     <ScrollView 
       style={[styles.container, { backgroundColor: theme.background }]}
       contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[theme.primary]}
+        />
+      }
     >
       <View style={styles.avatarContainer}>
-        <TouchableOpacity onPress={handleImagePick}>
+        <TouchableOpacity onPress={handleImagePick} disabled={loading}>
           {userData.foto ? (
             <Image 
               source={{ uri: userData.foto }} 
               style={[styles.avatar, { borderColor: theme.primary }]} 
+              onError={(e) => {
+                console.log('Erro ao carregar imagem:', e.nativeEvent.error);
+                setUserData(prev => ({ ...prev, foto: null }));
+              }}
             />
           ) : (
             <Avatar.Icon 
@@ -185,31 +287,33 @@ export default function EditarContaScreen({ navigation }) {
       <TextInput
         label="Nome Completo"
         value={userData.nome}
-        onChangeText={(text) => setUserData({...userData, nome: text})}
+        onChangeText={(text) => setUserData(prev => ({...prev, nome: text}))}
         style={[styles.input, { backgroundColor: theme.surface }]}
         textColor={theme.textPrimary}
         mode="outlined"
+        disabled={loading}
       />
 
       <TextInput
         label="Email"
         value={userData.email}
-        onChangeText={(text) => setUserData({...userData, email: text})}
+        onChangeText={(text) => setUserData(prev => ({...prev, email: text}))}
         keyboardType="email-address"
         style={[styles.input, { backgroundColor: theme.surface }]}
         textColor={theme.textPrimary}
         mode="outlined"
-        disabled
+        disabled={true}
       />
 
       <TextInput
         label="Telefone"
         value={userData.telefone}
-        onChangeText={(text) => setUserData({...userData, telefone: text})}
+        onChangeText={(text) => setUserData(prev => ({...prev, telefone: text}))}
         keyboardType="phone-pad"
         style={[styles.input, { backgroundColor: theme.surface }]}
         textColor={theme.textPrimary}
         mode="outlined"
+        disabled={loading}
       />
 
       <Button 
@@ -218,8 +322,19 @@ export default function EditarContaScreen({ navigation }) {
         style={[styles.saveButton, { backgroundColor: theme.primary }]}
         labelStyle={{ color: 'white' }}
         disabled={loading}
+        loading={loading}
       >
-        {loading ? 'Salvando...' : 'Salvar Alterações'}
+        Salvar Alterações
+      </Button>
+
+      <Button 
+        mode="outlined" 
+        onPress={() => navigation.goBack()}
+        style={[styles.cancelButton, { borderColor: theme.primary }]}
+        labelStyle={{ color: theme.primary }}
+        disabled={loading}
+      >
+        Cancelar
       </Button>
     </ScrollView>
   );
@@ -260,6 +375,10 @@ const styles = StyleSheet.create({
   saveButton: {
     marginTop: 25,
     paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  cancelButton: {
     borderRadius: 8,
   },
 });

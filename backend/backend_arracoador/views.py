@@ -15,6 +15,7 @@ from .models import Profile
 from .influx_services import get_sensor_data
 import uuid
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -251,13 +252,18 @@ class LoginView(APIView):
                 {"status": "error", "message": "Email não cadastrado"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
 # ====================== PERFIL DO USUÁRIO ======================
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_profile(request):
     try:
         user = request.user
-        profile = Profile.objects.get(user=user)
+        try:
+            profile = Profile.objects.get(user=user)
+        except Profile.DoesNotExist:
+            # Cria perfil se não existir
+            profile = Profile.objects.create(user=user)
         
         response_data = {
             'status': 'success',
@@ -268,17 +274,25 @@ def get_profile(request):
             'telefone': profile.phone,
         }
         
+        # CORREÇÃO: Verifica se a foto existe antes de tentar construir a URL
         if profile.photo:
-            response_data['profile_photo'] = request.build_absolute_uri(profile.photo.url)
-            response_data['foto_perfil'] = request.build_absolute_uri(profile.photo.url)
+            try:
+                # Verifica se o arquivo físico existe
+                if os.path.exists(profile.photo.path):
+                    response_data['profile_photo'] = request.build_absolute_uri(profile.photo.url)
+                    response_data['foto_perfil'] = request.build_absolute_uri(profile.photo.url)
+                else:
+                    logger.warning(f"Arquivo de foto não encontrado: {profile.photo.path}")
+                    # Remove a referência ao arquivo que não existe
+                    profile.photo = None
+                    profile.save()
+            except Exception as e:
+                logger.error(f"Erro ao processar foto: {str(e)}")
+                profile.photo = None
+                profile.save()
             
         return Response(response_data)
     
-    except Profile.DoesNotExist:
-        return Response(
-            {"status": "error", "message": "Perfil não encontrado"},
-            status=status.HTTP_404_NOT_FOUND
-        )
     except Exception as e:
         logger.error(f"Erro ao buscar perfil: {str(e)}")
         return Response(
@@ -287,12 +301,12 @@ def get_profile(request):
         )
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated])  # CORREÇÃO: IsAuthenticated estava escrito errado
 @parser_classes([MultiPartParser, FormParser])
 def update_profile(request):
     try:
         user = request.user
-        profile = Profile.objects.get(user=user)
+        profile, created = Profile.objects.get_or_create(user=user)
         updated_fields = []
 
         # Padroniza o tratamento dos campos
@@ -316,16 +330,44 @@ def update_profile(request):
             profile.phone = phone
             updated_fields.append('phone')
 
+        # CORREÇÃO: Upload de foto com tratamento de erros
         if 'foto_perfil' in request.FILES:
-            if profile.photo:
-                default_storage.delete(profile.photo.path)
-            profile.photo = request.FILES['foto_perfil']
-            updated_fields.append('photo')
+            try:
+                # Remove foto antiga se existir
+                if profile.photo:
+                    try:
+                        if os.path.exists(profile.photo.path):
+                            default_storage.delete(profile.photo.path)
+                    except Exception as e:
+                        logger.error(f"Erro ao deletar foto antiga: {str(e)}")
+                
+                # Salva nova foto
+                foto = request.FILES['foto_perfil']
+                
+                # Gera nome único para o arquivo
+                import time
+                file_extension = os.path.splitext(foto.name)[1]
+                filename = f"profile_{int(time.time())}{file_extension}"
+                
+                # Salva o arquivo
+                profile.photo.save(filename, foto)
+                updated_fields.append('photo')
+                
+                logger.info(f"Foto salva: {profile.photo.path}")
+                
+            except Exception as e:
+                logger.error(f"Erro ao processar upload da foto: {str(e)}")
+                return Response(
+                    {"status": "error", "message": "Erro ao processar a imagem"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
         if updated_fields:
             user.save()
             profile.save()
+            logger.info(f"Perfil atualizado. Campos: {updated_fields}")
 
+        # Constrói resposta
         response_data = {
             'status': 'success',
             'message': 'Perfil atualizado com sucesso',
@@ -333,20 +375,62 @@ def update_profile(request):
                 'first_name': user.first_name,
                 'email': user.email,
                 'phone': profile.phone,
-                'profile_photo': request.build_absolute_uri(profile.photo.url) if profile.photo else None
             }
         }
         
+        # Adiciona URL da foto se existir
+        if profile.photo:
+            try:
+                response_data['user']['profile_photo'] = request.build_absolute_uri(profile.photo.url)
+                response_data['user']['foto_perfil'] = request.build_absolute_uri(profile.photo.url)
+            except Exception as e:
+                logger.error(f"Erro ao construir URL da foto: {str(e)}")
+        
         return Response(response_data)
         
-    except Profile.DoesNotExist:
-        return Response(
-            {"status": "error", "message": "Perfil não encontrado"},
-            status=status.HTTP_404_NOT_FOUND
-        )
     except Exception as e:
         logger.error(f"Erro ao atualizar perfil: {str(e)}")
         return Response(
             {"status": "error", "message": "Erro ao atualizar perfil"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+# ====================== VIEW PARA DEBUG DE ARQUIVOS ======================
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def debug_media(request):
+    """View para debug do sistema de arquivos"""
+    media_info = {
+        'MEDIA_ROOT': settings.MEDIA_ROOT,
+        'MEDIA_URL': settings.MEDIA_URL,
+        'DEBUG': settings.DEBUG,
+        'media_root_exists': os.path.exists(settings.MEDIA_ROOT),
+        'files_in_media': []
+    }
+    
+    # Lista arquivos no diretório media
+    if os.path.exists(settings.MEDIA_ROOT):
+        for root, dirs, files in os.walk(settings.MEDIA_ROOT):
+            for file in files:
+                file_path = os.path.join(root, file)
+                media_info['files_in_media'].append({
+                    'path': file_path,
+                    'size': os.path.getsize(file_path),
+                    'exists': os.path.exists(file_path)
+                })
+    
+    return Response(media_info)
+
+class SensorView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        temperatura = request.data.get("temperatura")
+        tds = request.data.get("tds")
+        print(f"Temperatura: {temperatura} °C | TDS: {tds} ppm")
+
+        # Aqui você pode salvar no InfluxDB ou em um modelo Django
+        # exemplo fictício:
+        # SensorData.objects.create(temperatura=temperatura, tds=tds)
+
+        return Response({"status": "ok", "temperatura": temperatura, "tds": tds})

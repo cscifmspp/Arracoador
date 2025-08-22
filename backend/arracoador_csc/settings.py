@@ -65,8 +65,8 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True  # cuidado em produção, prefira CORS_ALLOWED_ORIGINS
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8081",
-    "http://192.168.1.46:8081",
-    "exp://192.168.1.46:8081",
+    "http://10.42.0.1:8081",
+    "exp://10.42.0.1:8081",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -131,6 +131,10 @@ USE_TZ = True
 
 # Arquivos estáticos
 STATIC_URL = "static/"
+
+# Configurações de Mídia
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Auto Field padrão
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
