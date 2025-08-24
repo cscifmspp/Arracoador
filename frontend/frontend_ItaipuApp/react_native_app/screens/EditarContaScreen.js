@@ -1,10 +1,12 @@
+// screens/EditarContaScreen.js
 import React, { useState, useEffect, useCallback } from 'react';
-import {View,StyleSheet,ScrollView,Alert,Image,TouchableOpacity,RefreshControl} from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Image, TouchableOpacity, RefreshControl } from 'react-native';
 import { TextInput, Button, Text, Avatar, ActivityIndicator } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../context/ThemeContext';
 import Config from '../config';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function EditarContaScreen({ navigation }) {
   const { theme } = useTheme();
@@ -51,6 +53,7 @@ export default function EditarContaScreen({ navigation }) {
         telefone: data.telefone || data.phone || '',
         foto: data.foto_perfil || data.profile_photo || null,
       });
+
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);
       Alert.alert('Erro', 'Não foi possível carregar os dados do perfil');
@@ -71,90 +74,46 @@ export default function EditarContaScreen({ navigation }) {
     loadProfile();
   }, [loadProfile]);
 
-  // FUNÇÃO CORRIGIDA - COMPATÍVEL COM TODAS VERSÕES
   const handleImagePick = async () => {
     try {
-      console.log('Solicitando permissões...');
-      
-      // Solicitar permissões
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      console.log('Resultado da permissão:', permissionResult);
       
       if (permissionResult.status !== 'granted') {
         Alert.alert('Permissão necessária', 'Precisamos acessar sua galeria para alterar a foto');
         return;
       }
 
-      console.log('Abrindo galeria...');
-      
-      // Método universalmente compatível
       const result = await ImagePicker.launchImageLibraryAsync({
-        // Usando a abordagem mais compatível
-        mediaTypes: 'images', // String simples que funciona em todas versões
+        mediaTypes: 'images',
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
 
-      console.log('Resultado completo:', result);
-
       if (result.canceled) {
-        console.log('Usuário cancelou a seleção');
         return;
       }
 
-      // Extrair a URI da imagem de forma compatível
       let imageUri;
       
-      // Para versões mais novas (assets array)
       if (result.assets && result.assets.length > 0) {
         imageUri = result.assets[0].uri;
-      } 
-      // Para versões mais antigas (uri direta)
-      else if (result.uri) {
+      } else if (result.uri) {
         imageUri = result.uri;
       }
-
-      console.log('URI da imagem selecionada:', imageUri);
 
       if (imageUri) {
         setUserData(prev => ({ ...prev, foto: imageUri }));
         Alert.alert('Sucesso', 'Imagem selecionada com sucesso!');
-      } else {
-        throw new Error('Não foi possível obter a URI da imagem');
       }
 
     } catch (error) {
-      console.error('Erro detalhado ao selecionar imagem:', error);
-      
-      // Tentativa alternativa EXTRA segura
-      try {
-        console.log('Tentando método ultra compatível...');
-        const fallbackResult = await ImagePicker.launchImageLibraryAsync({
-          // Opções mínimas e mais compatíveis
-          allowsEditing: true,
-          quality: 0.8,
-        });
-
-        console.log('Resultado fallback:', fallbackResult);
-
-        if (!fallbackResult.canceled) {
-          const fallbackUri = fallbackResult.uri || 
-                            (fallbackResult.assets && fallbackResult.assets[0]?.uri);
-          if (fallbackUri) {
-            setUserData(prev => ({ ...prev, foto: fallbackUri }));
-            Alert.alert('Sucesso', 'Imagem selecionada com sucesso!');
-            return;
-          }
-        }
-      } catch (fallbackError) {
-        console.error('Erro no fallback:', fallbackError);
-      }
-      
-      Alert.alert('Erro', 'Não foi possível selecionar a imagem. Tente novamente.');
+      console.error('Erro ao selecionar imagem:', error);
+      Alert.alert('Erro', 'Não foi possível selecionar a imagem');
     }
   };
 
+  // screens/EditarContaScreen.js
   const handleSave = async () => {
     if (!userData.nome.trim()) {
       Alert.alert('Erro', 'O nome é obrigatório');
@@ -181,7 +140,6 @@ export default function EditarContaScreen({ navigation }) {
       }
 
       if (userData.foto && userData.foto.startsWith('file:')) {
-        console.log('Enviando imagem:', userData.foto);
         formData.append('foto_perfil', {
           uri: userData.foto,
           type: 'image/jpeg',
@@ -189,7 +147,6 @@ export default function EditarContaScreen({ navigation }) {
         });
       }
 
-      console.log('Enviando dados para atualização de perfil...');
       const response = await fetch(Config.getUrl('profileUpdate'), {
         method: 'POST',
         headers: {
@@ -206,27 +163,39 @@ export default function EditarContaScreen({ navigation }) {
       }
 
       const responseText = await response.text();
-      console.log('Resposta bruta do servidor:', responseText);
-      
       let responseData;
       
       try {
         responseData = JSON.parse(responseText);
-        console.log('Dados parseados:', responseData);
+        console.log('📊 Resposta do servidor:', responseData);
       } catch {
-        console.error('Não foi possível parsear JSON:', responseText);
-        throw new Error(`Resposta inválida do servidor: ${responseText}`);
+        throw new Error('Resposta inválida do servidor');
       }
 
       if (!response.ok) {
         throw new Error(responseData.error || responseData.message || 'Erro ao atualizar perfil');
       }
 
+      // ✅✅✅ CORREÇÃO: Usar os dados que voltaram do SERVIDOR
+      const profileToSave = {
+        nome: responseData.nome || responseData.first_name || userData.nome,
+        email: responseData.email || userData.email,
+        telefone: responseData.telefone || responseData.phone || userData.telefone,
+        foto: responseData.foto_perfil || responseData.profile_photo || userData.foto
+      };
+
+      console.log('💾 Salvando dados REAIS no AsyncStorage:', profileToSave);
+      await AsyncStorage.setItem('userProfile', JSON.stringify(profileToSave));
+      
+      // Verificar se salvou corretamente
+      const savedData = await AsyncStorage.getItem('userProfile');
+      console.log('✅ Dados salvos (verificação):', savedData);
+
       Alert.alert('Sucesso', 'Perfil atualizado com sucesso!', [
         { 
           text: 'OK', 
           onPress: () => {
-            navigation.navigate('Conta', { refresh: Date.now() });
+            navigation.goBack();
           }
         }
       ]);

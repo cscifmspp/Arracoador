@@ -1,9 +1,11 @@
 // screens/DashboardScreen.js
 import React, { useEffect, useRef, useState } from "react";
-import { ScrollView, StyleSheet, View, TouchableOpacity, Alert } from "react-native";
+import { ScrollView, StyleSheet, View, TouchableOpacity, Alert, Image } from "react-native";
 import { Card, Text, Button, Avatar, ActivityIndicator } from "react-native-paper";
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Config from '../config';
 
 const ESP_IP = "10.42.0.42";
 const BASE_URL = `http://${ESP_IP}`;
@@ -21,7 +23,59 @@ export default function DashboardScreen() {
   });
   
   const [motorStatus, setMotorStatus] = useState('Parado');
+  const [userProfile, setUserProfile] = useState({
+    foto: null,
+    nome: 'Usuário'
+  });
   const intervalRef = useRef(null);
+
+  // Carregar perfil do usuário do AsyncStorage
+  const loadUserProfile = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('userProfile');
+      
+      if (userData) {
+        const parsedData = JSON.parse(userData);
+        setUserProfile({
+          foto: parsedData.foto || null,
+          nome: parsedData.nome || 'Usuário'
+        });
+      }
+    } catch (error) {
+      console.log('Erro ao carregar perfil:', error);
+    }
+  };
+
+  // Função para SINCRONIZAR com backend
+  const syncWithBackend = async () => {
+    try {
+      const token = await Config.getAuthToken();
+      if (!token) {
+        Alert.alert('Erro', 'Usuário não autenticado');
+        return;
+      }
+
+      const response = await fetch(Config.getUrl('profile'), {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const realProfile = {
+          nome: data.nome || data.first_name || 'Usuário',
+          email: data.email || '',
+          telefone: data.telefone || data.phone || '',
+          foto: data.foto_perfil || data.profile_photo || null
+        };
+        
+        await AsyncStorage.setItem('userProfile', JSON.stringify(realProfile));
+        await loadUserProfile();
+        Alert.alert('✅ Sincronizado', 'Dados atualizados do backend!');
+      }
+    } catch (error) {
+      Alert.alert('Erro', 'Falha ao sincronizar com o backend');
+    }
+  };
 
   const fetchWithTimeout = async (url, ms = 5000) => {
     const controller = new AbortController();
@@ -76,6 +130,7 @@ export default function DashboardScreen() {
   };
 
   useEffect(() => {
+    loadUserProfile();
     fetchAllSensors();
     intervalRef.current = setInterval(fetchAllSensors, 5000);
     
@@ -86,19 +141,45 @@ export default function DashboardScreen() {
     };
   }, []);
 
+  // Atualizar perfil quando a tela receber foco
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadUserProfile();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
-      <TouchableOpacity onPress={() => navigation.navigate('Conta')}>
-        <Avatar.Icon
-          icon="account"
-          size={48}
-          style={[styles.avatar, { backgroundColor: theme.surface }]}
-        />
+    <ScrollView 
+      style={[styles.container, { backgroundColor: theme.background }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={true}
+    >
+      {/* Header com Foto do Perfil */}
+      <TouchableOpacity 
+        onPress={() => navigation.navigate('Conta')}
+        style={styles.profileButton}
+      >
+        {userProfile.foto ? (
+          <Image 
+            source={{ uri: userProfile.foto }} 
+            style={[styles.profileImage, { borderColor: theme.primary }]}
+            onError={(e) => {
+              setUserProfile(prev => ({ ...prev, foto: null }));
+            }}
+          />
+        ) : (
+          <Avatar.Icon
+            icon="account"
+            size={48}
+            style={[styles.avatarIcon, { backgroundColor: theme.primary }]}
+          />
+        )}
       </TouchableOpacity>
 
       <Text style={[styles.title, { color: theme.textPrimary }]}>
-        Bem-vindo ao AquaSense
+        Bem-vindo, {userProfile.nome}!
       </Text>
 
       {/* Status da Conexão */}
@@ -226,25 +307,50 @@ export default function DashboardScreen() {
       >
         Ver Tanques
       </Button>
+
+      {/* Espaço extra para garantir scroll */}
+      <View style={styles.spacer} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
     flex: 1,
   },
-  avatar: {
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40, // Espaço extra no final para scroll
+  },
+  profileButton: {
     alignSelf: 'flex-start',
-    marginTop: 50
+    marginTop: 50,
+    marginBottom: 10,
+  },
+  profileImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+  },
+  avatarIcon: {
+    backgroundColor: '#6200ee',
   },
   title: {
     fontSize: 24,
     fontFamily: 'Inter_700Bold',
-    marginTop: 50,
+    marginTop: 10,
     textAlign: 'center',
-    marginBottom: 30
+    marginBottom: 20
+  },
+  controlButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  controlButton: {
+    flex: 1,
+    marginBottom: 10,
   },
   card: {
     marginBottom: 20,
@@ -277,16 +383,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 8
   },
-  // Adicione no StyleSheet:
-  profileImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-  },
-  profileButton: {
-    alignSelf: 'flex-start',
-    marginTop: 50,
-    marginBottom: 10,
-}
+  spacer: {
+    height: 50, // Espaço extra para garantir scroll
+  }
 });

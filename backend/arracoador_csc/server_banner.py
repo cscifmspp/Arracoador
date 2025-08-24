@@ -1,12 +1,35 @@
 from rich.console import Console
-from rich.panel import Panel
 
 def show_server_banner():
     console = Console()
-    console.print(Panel.fit(
-        "[bold cyan]🐠 Alimentador CSC - WebSocket Server 🐠[/bold cyan]\n"
-        "[bold green]⚙️  Status:[/bold green] Ativo e ouvindo conexões...\n"
-        "[bold yellow]Autor:[/bold yellow] Os manos do CSC😎",
-        title="[bold magenta]Servidor Iniciado[/bold magenta]",
-        subtitle="🚀 React Native + Django Channels",
-    ))
+
+    ascii_logo = r"""
+          _____                    _____          
+         /\    \                  /\    \         
+        /::\____\                /::\    \        
+       /::::|   |               /::::\    \       
+      /:::::|   |              /::::::\    \      
+     /::::::|   |             /:::/\:::\    \     
+    /:::/|::|   |            /:::/  \:::\    \    
+   /:::/ |::|   |           /:::/    \:::\    \   
+  /:::/  |::|___|______    /:::/    / \:::\    \  
+ /:::/   |::::::::\    \  /:::/    /   \:::\    \ 
+/:::/    |:::::::::\____\/:::/____/     \:::\____\
+\::/    / ~~~~~/:::/    /\:::\    \      \::/    /
+ \/____/      /:::/    /  \:::\    \      \/____/ 
+             /:::/    /    \:::\    \             
+            /:::/    /      \:::\    \            
+           /:::/    /        \:::\    \           
+          /:::/    /          \:::\    \          
+         /:::/    /            \:::\    \         
+        /:::/    /              \:::\____\        
+        \::/    /                \::/    /        
+         \/____/                  \/____/         
+                                                          
+    """
+
+    console.print(ascii_logo, style="bold cyan")
+    console.print("[bold cyan]🐠 Alimentador CSC - WebSocket Server 🐠[/bold cyan]")
+    console.print("[bold green]⚙️  Status:[/bold green] Ativo e ouvindo conexões...")
+    console.print("[bold yellow]Autor:[/bold yellow] Os manos do CSC 😎")
+    console.print("[bold magenta]🚀 React Native + Django Channels[/bold magenta]")

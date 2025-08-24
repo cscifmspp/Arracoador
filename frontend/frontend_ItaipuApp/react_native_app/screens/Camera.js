@@ -1,5 +1,6 @@
+// screens/Camera.js
 import React, { useState } from 'react';
-import { View, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
+import { ScrollView, View, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
 import { Text, Card, Button, Avatar } from 'react-native-paper';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
@@ -21,7 +22,11 @@ export default function Camera() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <ScrollView 
+      style={[styles.container, { backgroundColor: theme.background }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={true}
+    >
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
         <MaterialCommunityIcons name="arrow-left" size={24} color={theme.textPrimary} />
       </TouchableOpacity>
@@ -32,43 +37,16 @@ export default function Camera() {
         <Card.Title
           title="Visualização da Câmera"
           titleStyle={{ color: theme.textPrimary }}
-          left={(props) => (
-            <Avatar.Icon 
-              {...props} 
-              icon="camera" 
-              style={{ backgroundColor: theme.primary }} 
-            />
-          )}
+          left={(props) => <Avatar.Icon {...props} icon="camera" style={{ backgroundColor: theme.primary }} />}
         />
         <Card.Content>
           <View style={styles.cameraContainer}>
-            <Image
-              source={{ uri: imageUri }}
-              style={styles.cameraImage}
-              resizeMode="cover"
-            />
+            <Image source={{ uri: imageUri }} style={styles.cameraImage} resizeMode="cover" />
             <View style={styles.overlayControls}>
-              <Button
-                mode="contained"
-                onPress={toggleStream}
-                style={[
-                  styles.controlButton,
-                  { 
-                    backgroundColor: isStreaming ? theme.error : theme.primary 
-                  }
-                ]}
-                icon={isStreaming ? "stop" : "play"}
-              >
+              <Button mode="contained" onPress={toggleStream} style={[styles.controlButton, { backgroundColor: isStreaming ? theme.error : theme.primary }]} icon={isStreaming ? "stop" : "play"}>
                 {isStreaming ? "Parar" : "Iniciar"}
               </Button>
-              
-              <Button
-                mode="contained"
-                onPress={takeSnapshot}
-                style={[styles.controlButton, { backgroundColor: theme.secondary }]}
-                icon="camera"
-                disabled={!isStreaming}
-              >
+              <Button mode="contained" onPress={takeSnapshot} style={[styles.controlButton, { backgroundColor: theme.secondary }]} icon="camera" disabled={!isStreaming}>
                 Capturar
               </Button>
             </View>
@@ -80,109 +58,83 @@ export default function Camera() {
         <Card.Title
           title="Controles da Câmera"
           titleStyle={{ color: theme.textPrimary }}
-          left={(props) => (
-            <Avatar.Icon 
-              {...props} 
-              icon="video" 
-              style={{ backgroundColor: theme.primary }} 
-            />
-          )}
+          left={(props) => <Avatar.Icon {...props} icon="video" style={{ backgroundColor: theme.primary }} />}
         />
         <Card.Content>
           <View style={styles.controlsRow}>
-            <Button
-              mode="outlined"
-              onPress={() => Alert.alert("Zoom +")}
-              style={[styles.smallButton, { borderColor: theme.primary }]}
-              textColor={theme.primary}
-              icon="magnify-plus"
-            >
-              Zoom +
-            </Button>
-            
-            <Button
-              mode="outlined"
-              onPress={() => Alert.alert("Zoom -")}
-              style={[styles.smallButton, { borderColor: theme.primary }]}
-              textColor={theme.primary}
-              icon="magnify-minus"
-            >
-              Zoom -
-            </Button>
-            
-            <Button
-              mode="outlined"
-              onPress={() => Alert.alert("Rotação")}
-              style={[styles.smallButton, { borderColor: theme.primary }]}
-              textColor={theme.primary}
-              icon="rotate-right"
-            >
-              Girar
-            </Button>
+            <Button mode="outlined" onPress={() => Alert.alert("Zoom +")} style={[styles.smallButton, { borderColor: theme.primary }]} textColor={theme.primary} icon="magnify-plus">Zoom +</Button>
+            <Button mode="outlined" onPress={() => Alert.alert("Zoom -")} style={[styles.smallButton, { borderColor: theme.primary }]} textColor={theme.primary} icon="magnify-minus">Zoom -</Button>
+            <Button mode="outlined" onPress={() => Alert.alert("Rotação")} style={[styles.smallButton, { borderColor: theme.primary }]} textColor={theme.primary} icon="rotate-right">Girar</Button>
           </View>
         </Card.Content>
       </Card>
 
-      <Text style={[styles.statusText, { color: theme.textSecondary }]}>
-        Status: {isStreaming ? "Transmitindo..." : "Offline"}
-      </Text>
-    </View>
+      <Text style={[styles.statusText, { color: theme.textSecondary }]}>Status: {isStreaming ? "Transmitindo..." : "Offline"}</Text>
+
+      <View style={styles.spacer} />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
+  container: { 
+    flex: 1 
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginTop: 50,
-    padding: 8,
-    borderRadius: 20,
+  scrollContent: { 
+    padding: 20, 
+    paddingBottom: 40 
   },
-  title: {
-    fontSize: 26,
-    fontFamily: 'Inter_700Bold',
-    marginTop: 20,
-    marginBottom: 30,
-    textAlign: 'center',
+  backButton: { 
+    alignSelf: 'flex-start', 
+    marginTop: 50, 
+    padding: 8, 
+    borderRadius: 20 
   },
-  card: {
-    borderRadius: 16,
-    marginBottom: 20,
+  title: { 
+    fontSize: 26, 
+    fontFamily: 'Inter_700Bold', 
+    marginTop: 20, 
+    marginBottom: 30, 
+    textAlign: 'center' 
   },
-  cameraContainer: {
-    position: 'relative',
-    borderRadius: 12,
-    overflow: 'hidden',
+  card: { 
+    borderRadius: 16, 
+    marginBottom: 20 
   },
-  cameraImage: {
-    width: '100%',
-    height: 250,
-    borderRadius: 12,
+  cameraContainer: { 
+    position: 'relative', 
+    borderRadius: 12, 
+    overflow: 'hidden' 
   },
-  overlayControls: {
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
-    flexDirection: 'row',
-    gap: 10,
+  cameraImage: { 
+    width: '100%', 
+    height: 250, 
+    borderRadius: 12 
   },
-  controlButton: {
-    borderRadius: 8,
+  overlayControls: { 
+    position: 'absolute', 
+    bottom: 10, 
+    right: 10, 
+    flexDirection: 'row', 
+    gap: 10 
   },
-  controlsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 10,
+  controlButton: { 
+    borderRadius: 8 
   },
-  smallButton: {
-    borderRadius: 8,
+  controlsRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-around', 
+    marginVertical: 10 
   },
-  statusText: {
-    textAlign: 'center',
-    marginTop: 10,
-    fontStyle: 'italic',
+  smallButton: { 
+    borderRadius: 8 
   },
+  statusText: { 
+    textAlign: 'center', 
+    marginTop: 10, 
+    fontStyle: 'italic' 
+  },
+  spacer: { 
+    height: 50 
+  }
 });

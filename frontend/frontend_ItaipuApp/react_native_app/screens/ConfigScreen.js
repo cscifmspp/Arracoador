@@ -11,7 +11,7 @@ export default function Configuracoes() {
       <Text style={[styles.title, { color: theme.textPrimary }]}>Minha Conta</Text>
 
       <View style={[styles.card, { 
-        backgroundColor: theme.surface,         borderColor: theme.border 
+        backgroundColor: theme.surface,borderColor: theme.border 
       }]}>
         <Text style={[styles.cardText, { color: theme.textPrimary }]}>
           Email: usuario@exemplo.com
