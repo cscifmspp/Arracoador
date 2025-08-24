@@ -10,7 +10,7 @@ export const StaticColors = {
 // Temas claro e escuro
 export const lightTheme = {
   ...StaticColors,
-  dark: false,
+  //dark: false,
   background: "#F5F5F5",
   surface: "#FFFFFF",
   textPrimary: "#333333",
@@ -20,7 +20,7 @@ export const lightTheme = {
 
 export const darkTheme = {
   ...StaticColors,
-  dark: true,
+  //dark: true,
   background: "#2F2F2F",
   surface: "#3C3C3C",
   textPrimary: "#F4F9F9",

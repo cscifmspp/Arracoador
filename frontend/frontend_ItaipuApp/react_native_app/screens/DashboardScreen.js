@@ -5,7 +5,7 @@ import { Card, Text, Button, Avatar, ActivityIndicator } from "react-native-pape
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Config from '../config';
+import Config from '../config'; // ✅ IMPORTAR O CONFIG
 
 const ESP_IP = "10.42.0.42";
 const BASE_URL = `http://${ESP_IP}`;
@@ -32,17 +32,36 @@ export default function DashboardScreen() {
   // Carregar perfil do usuário do AsyncStorage
   const loadUserProfile = async () => {
     try {
+      console.log('📦 Buscando perfil no AsyncStorage...');
       const userData = await AsyncStorage.getItem('userProfile');
+      console.log('Dados brutos do AsyncStorage:', userData);
       
       if (userData) {
         const parsedData = JSON.parse(userData);
+        console.log('Perfil parseado:', parsedData);
+        
         setUserProfile({
           foto: parsedData.foto || null,
           nome: parsedData.nome || 'Usuário'
         });
+      } else {
+        console.log('❌ Nenhum perfil encontrado no AsyncStorage');
+        
+        // Criar perfil padrão se não existir
+        const defaultProfile = {
+          nome: 'Usuário',
+          email: '',
+          telefone: '',
+          foto: null
+        };
+        await AsyncStorage.setItem('userProfile', JSON.stringify(defaultProfile));
+        setUserProfile({
+          foto: null,
+          nome: 'Usuário'
+        });
       }
     } catch (error) {
-      console.log('Erro ao carregar perfil:', error);
+      console.log('❌ Erro ao carregar perfil:', error);
     }
   };
 
@@ -71,9 +90,23 @@ export default function DashboardScreen() {
         await AsyncStorage.setItem('userProfile', JSON.stringify(realProfile));
         await loadUserProfile();
         Alert.alert('✅ Sincronizado', 'Dados atualizados do backend!');
+      } else {
+        Alert.alert('Erro', 'Falha ao carregar perfil do backend');
       }
     } catch (error) {
+      console.error('Erro na sincronização:', error);
       Alert.alert('Erro', 'Falha ao sincronizar com o backend');
+    }
+  };
+
+  // Função para LIMPAR dados de teste
+  const clearTestData = async () => {
+    try {
+      await AsyncStorage.removeItem('userProfile');
+      await loadUserProfile();
+      Alert.alert('✅ Limpo', 'Dados de teste removidos!');
+    } catch (error) {
+      Alert.alert('Erro', 'Falha ao limpar dados');
     }
   };
 
@@ -141,9 +174,29 @@ export default function DashboardScreen() {
     };
   }, []);
 
+  // Debug: verificar todas as chaves do AsyncStorage
+  useEffect(() => {
+    const debugStorage = async () => {
+      try {
+        const allKeys = await AsyncStorage.getAllKeys();
+        console.log('🔑 Todas as chaves do AsyncStorage:', allKeys);
+        
+        for (const key of allKeys) {
+          const value = await AsyncStorage.getItem(key);
+          console.log(`📦 ${key}:`, value);
+        }
+      } catch (error) {
+        console.log('Erro ao debuggar AsyncStorage:', error);
+      }
+    };
+    
+    debugStorage();
+  }, []);
+
   // Atualizar perfil quando a tela receber foco
   React.useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
+      console.log('🔄 Tela Dashboard em foco - recarregando perfil...');
       loadUserProfile();
     });
 
@@ -151,14 +204,10 @@ export default function DashboardScreen() {
   }, [navigation]);
 
   return (
-    <ScrollView 
-      style={[styles.container, { backgroundColor: theme.background }]}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={true}
-    >
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header com Foto do Perfil */}
       <TouchableOpacity 
-        onPress={() => navigation.navigate('Conta')}
+        onPress={() => navigation.navigate('EditarConta')}
         style={styles.profileButton}
       >
         {userProfile.foto ? (
@@ -166,6 +215,7 @@ export default function DashboardScreen() {
             source={{ uri: userProfile.foto }} 
             style={[styles.profileImage, { borderColor: theme.primary }]}
             onError={(e) => {
+              console.log('❌ Erro ao carregar imagem:', e.nativeEvent.error);
               setUserProfile(prev => ({ ...prev, foto: null }));
             }}
           />
@@ -181,6 +231,28 @@ export default function DashboardScreen() {
       <Text style={[styles.title, { color: theme.textPrimary }]}>
         Bem-vindo, {userProfile.nome}!
       </Text>
+
+      {/* Botões de controle */}
+      <View style={styles.controlButtons}>
+        <Button 
+          mode="outlined" 
+          onPress={syncWithBackend}
+          style={[styles.controlButton, { marginRight: 10 }]}
+          icon="cloud-sync"
+        >
+          Sincronizar
+        </Button>
+        
+        <Button 
+          mode="outlined" 
+          onPress={clearTestData}
+          style={[styles.controlButton, { borderColor: theme.error }]}
+          textColor={theme.error}
+          icon="delete"
+        >
+          Limpar Teste
+        </Button>
+      </View>
 
       {/* Status da Conexão */}
       <Card style={[styles.card, { backgroundColor: theme.surface }]}>
@@ -307,20 +379,14 @@ export default function DashboardScreen() {
       >
         Ver Tanques
       </Button>
-
-      {/* Espaço extra para garantir scroll */}
-      <View style={styles.spacer} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  scrollContent: {
     padding: 20,
-    paddingBottom: 40, // Espaço extra no final para scroll
+    flex: 1,
   },
   profileButton: {
     alignSelf: 'flex-start',
@@ -382,8 +448,5 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     borderRadius: 12,
     padding: 8
-  },
-  spacer: {
-    height: 50, // Espaço extra para garantir scroll
   }
 });

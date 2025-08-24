@@ -1,25 +1,28 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { lightTheme, darkTheme } from '../constants/Colors';
 
 interface ThemeContextType {
-  theme: typeof darkTheme;
+  theme: typeof darkTheme | typeof lightTheme;
   toggleTheme: () => void;
+  isDark: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: darkTheme,
+  theme: lightTheme, // Mudei para lightTheme como padrão
   toggleTheme: () => {},
+  isDark: false, // Adicionei esta propriedade
 });
 
 export const ThemeProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  const [theme, setTheme] = useState(darkTheme);
+  const [isDark, setIsDark] = useState(false); // false = tema claro como padrão
+  const theme = isDark ? darkTheme : lightTheme;
 
-  const toggleTheme = () => {
-    setTheme(theme.dark ? lightTheme : darkTheme);
-  };
+  const toggleTheme = useCallback(() => {
+    setIsDark(prev => !prev);
+  }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, isDark }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -1,20 +1,13 @@
-//RegisterScreen
 import React, { useState } from 'react';
-import { 
-  View, 
-  TextInput, 
-  Button, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  Alert,
-  Linking 
-} from 'react-native';
-import axios from 'axios';
+import { View, ScrollView,Alert,Linking,StyleSheet } from 'react-native';
+import { Text, TextInput, Button, ActivityIndicator,Card } from 'react-native-paper';
 import * as Clipboard from 'expo-clipboard';
+import axios from 'axios';
 import Config from '../config';
+import { useTheme } from '../context/ThemeContext';
 
 export default function RegisterScreen({ navigation }) {
+  const { theme } = useTheme();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -22,6 +15,7 @@ export default function RegisterScreen({ navigation }) {
     phone: ''
   });
   const [mensagem, setMensagem] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (name, value) => {
     setFormData({
@@ -32,140 +26,201 @@ export default function RegisterScreen({ navigation }) {
 
   const registrar = async () => {
     try {
-        setMensagem('Criando conta...');
-        
-        const response = await axios.post(
-            Config.getUrl('register'),
-            { 
-                email: formData.email.trim(),
-                password: formData.password,
-                first_name: formData.first_name,
-                phone: formData.phone
-            },
-            {
-                headers: { 'Content-Type': 'application/json' },
-                timeout: 10000,
-            }
-        );
+      setLoading(true);
+      setMensagem('Criando conta...');
+      
+      const response = await axios.post(
+        Config.getUrl('register'),
+        { 
+          email: formData.email.trim(),
+          password: formData.password,
+          first_name: formData.first_name,
+          phone: formData.phone
+        },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 10000,
+        }
+      );
 
-        // SEMPRE mostra o link em desenvolvimento
-        if (response.data.dev_link) {
-            Alert.alert(
-                'Conta criada com sucesso!',
-                `Copie o link abaixo para ativar sua conta:\n\n${response.data.dev_link}`,
-                [
-                    { 
-                        text: 'Copiar Link', 
-                        onPress: () => Clipboard.setStringAsync(response.data.dev_link) 
-                    },
-                    { 
-                        text: 'Abrir no Navegador', 
-                        onPress: () => Linking.openURL(response.data.dev_link) 
-                    },
-                    { text: 'OK' }
-                ]
-            );
-        } else {
-            Alert.alert(
-                'Sucesso',
-                'Verifique seu e-mail para ativar sua conta'
-            );
-        }
-        
-        setMensagem(response.data.message);
-        
-    } catch (err) {
-        let errorMessage = 'Erro ao cadastrar';
-        
-        if (err.response?.data?.error) {
-            errorMessage = err.response.data.error;
-        } else if (err.response?.data?.message) {
-            errorMessage = err.response.data.message;
-        } else if (err.message.includes('timeout')) {
-            errorMessage = 'Servidor não respondeu. Verifique sua conexão.';
-        } else if (err.message.includes('Network Error')) {
-            errorMessage = 'Erro de rede. Verifique se o servidor está rodando.';
-        }
-        
-        setMensagem(errorMessage);
-        console.error('Erro detalhado:', err.response?.data || err.message);
+      if (response.data.dev_link) {
+        Alert.alert(
+          'Conta criada com sucesso!',
+          `Copie o link abaixo para ativar sua conta:\n\n${response.data.dev_link}`,
+          [
+            { 
+              text: 'Copiar Link', 
+              onPress: () => Clipboard.setStringAsync(response.data.dev_link) 
+            },
+            { 
+              text: 'Abrir no Navegador', 
+              onPress: () => Linking.openURL(response.data.dev_link) 
+            },
+            { text: 'OK' }
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Sucesso',
+          'Verifique seu e-mail para ativar sua conta'
+        );
       }
+      
+      setMensagem(response.data.message);
+      
+    } catch (err) {
+      let errorMessage = 'Erro ao cadastrar';
+      
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message.includes('timeout')) {
+        errorMessage = 'Servidor não respondeu. Verifique sua conexão.';
+      } else if (err.message.includes('Network Error')) {
+        errorMessage = 'Erro de rede. Verifique se o servidor está rodando.';
+      }
+      
+      setMensagem(errorMessage);
+      console.error('Erro detalhado:', err.response?.data || err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Cadastro</Text>
-      
-      <TextInput
-        placeholder="Nome Completo"
-        value={formData.first_name}
-        onChangeText={(text) => handleChange('first_name', text)}
-        style={styles.input}
-      />
-      
-      <TextInput
-        placeholder="Email"
-        value={formData.email}
-        onChangeText={(text) => handleChange('email', text)}
-        style={styles.input}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      
-      <TextInput
-        placeholder="Senha"
-        value={formData.password}
-        onChangeText={(text) => handleChange('password', text)}
-        style={styles.input}
-        secureTextEntry
-      />
-      
-      <TextInput
-        placeholder="Telefone"
-        value={formData.phone}
-        onChangeText={(text) => handleChange('phone', text)}
-        style={styles.input}
-        keyboardType="phone-pad"
-      />
+    <ScrollView 
+      style={[styles.container, { backgroundColor: theme.background }]}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <View style={styles.content}>
+        <Text style={[styles.title, { color: theme.textPrimary, fontFamily: 'Inter_700Bold' }]}>
+          Criar Conta
+        </Text>
 
-      <Button title="Cadastrar" onPress={registrar} />
-      
-      <Text style={styles.message}>{mensagem}</Text>
+        <Card style={[styles.card, { backgroundColor: theme.surface }]}>
+          <Card.Content>
+            <TextInput
+              label="Nome Completo"
+              value={formData.first_name}
+              onChangeText={(text) => handleChange('first_name', text)}
+              style={[styles.input, { backgroundColor: theme.surface }]}
+              mode="outlined"
+              outlineColor={theme.border}
+              activeOutlineColor={theme.primary}
+              textColor={theme.textPrimary}
+            />
+            
+            <TextInput
+              label="Email"
+              value={formData.email}
+              onChangeText={(text) => handleChange('email', text)}
+              style={[styles.input, { backgroundColor: theme.surface }]}
+              mode="outlined"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              outlineColor={theme.border}
+              activeOutlineColor={theme.primary}
+              textColor={theme.textPrimary}
+            />
+            
+            <TextInput
+              label="Senha"
+              value={formData.password}
+              onChangeText={(text) => handleChange('password', text)}
+              style={[styles.input, { backgroundColor: theme.surface }]}
+              mode="outlined"
+              secureTextEntry
+              outlineColor={theme.border}
+              activeOutlineColor={theme.primary}
+              textColor={theme.textPrimary}
+            />
+            
+            <TextInput
+              label="Telefone"
+              value={formData.phone}
+              onChangeText={(text) => handleChange('phone', text)}
+              style={[styles.input, { backgroundColor: theme.surface }]}
+              mode="outlined"
+              keyboardType="phone-pad"
+              outlineColor={theme.border}
+              activeOutlineColor={theme.primary}
+              textColor={theme.textPrimary}
+            />
 
-      <Text style={styles.link} onPress={() => navigation.navigate('Login')}>
-        Já tem uma conta? Entrar
-      </Text>
+            {loading ? (
+              <ActivityIndicator animating={true} color={theme.primary} style={styles.loader} />
+            ) : (
+              <Button 
+                mode="contained" 
+                onPress={registrar}
+                style={[styles.button, { backgroundColor: theme.primary }]}
+                labelStyle={{ color: 'white', fontFamily: 'Inter_700Bold' }}
+              >
+                Cadastrar
+              </Button>
+            )}
+
+            {mensagem ? (
+              <Text style={[styles.message, { color: theme.textSecondary }]}>
+                {mensagem}
+              </Text>
+            ) : null}
+          </Card.Content>
+        </Card>
+
+        <Button 
+          mode="text" 
+          onPress={() => navigation.navigate('Login')}
+          textColor={theme.primary}
+          style={styles.linkButton}
+          labelStyle={{ fontFamily: 'Inter_400Regular' }}
+        >
+          Já tem uma conta? Entrar
+        </Button>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    flex: 1,
+  },
+  scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    backgroundColor: '#121212'
+  },
+  content: {
+    padding: 20,
+    paddingBottom: 40,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
+    marginTop:150,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  card: {
+    borderRadius: 16,
     marginBottom: 20,
-    color: '#fff',
-    textAlign: 'center'
   },
   input: {
-    backgroundColor: '#fff',
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5
+    marginBottom: 15,
+  },
+  button: {
+    borderRadius: 8,
+    marginTop: 10,
+    paddingVertical: 5,
+  },
+  loader: {
+    marginVertical: 20,
   },
   message: {
-    marginTop: 10,
-    color: '#fff',
-    textAlign: 'center'
+    marginTop: 15,
+    textAlign: 'center',
+    fontSize: 14,
   },
-  link: {
+  linkButton: {
     marginTop: 20,
-    color: '#00f',
-    textAlign: 'center'
-  }
+  },
 });

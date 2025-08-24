@@ -182,24 +182,27 @@ export default function ContaScreen() {
               />
             </View>
 
-            <View style={styles.preferenceRow}>
-              <View style={styles.preferenceInfo}>
-                <MaterialCommunityIcons 
-                  name={isDark ? "weather-night" : "weather-sunny"} 
-                  size={20} 
-                  color={theme.textPrimary} 
-                />
-                <Text style={[styles.preferenceText, { color: theme.textPrimary }]}>
-                  Modo Noturno
-                </Text>
-              </View>
-              <Switch
-                value={isDark}
-                onValueChange={toggleTheme}
-                thumbColor={isDark ? theme.primary : '#f4f3f4'}
-                trackColor={{ false: '#767577', true: theme.primary + '80' }}
-              />
+           <View style={styles.preferenceRow}>
+            <View style={styles.preferenceInfo}>
+            <MaterialCommunityIcons 
+              name={isDark ? "weather-night" : "weather-sunny"} 
+              size={20} 
+              color={theme.textPrimary} 
+            />
+            <Text style={[styles.preferenceText, { color: theme.textPrimary }]}>
+             Modo Noturno
+            </Text>
             </View>
+  <Switch
+    value={isDark}
+    onValueChange={toggleTheme}
+    thumbColor={isDark ? theme.primary : '#f4f3f4'}
+    trackColor={{ 
+      false: '#767577', 
+      true: theme.primary + '80' 
+    }}
+  />
+</View>
           </Card.Content>
         </Card>
 
