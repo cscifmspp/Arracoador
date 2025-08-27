@@ -14,7 +14,7 @@ import LoginScreen from '../screens/LoginScreen';
 import Tanque from '../screens/Tanque';
 import ContaScreen from '../screens/ContaScreen';
 import EditarContaScreen from '../screens/EditarContaScreen';
-
+import VerificationScreen from '../screens/VerificationScreen';
 const Stack = createNativeStackNavigator();
 
 function MainScreen({ component: Component, ...props }) {
@@ -41,6 +41,7 @@ export default function AppNavigation({ isAuthenticated, setIsAuthenticated }) {
               )}
             </Stack.Screen>
             <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="Verification" component={VerificationScreen} />
           </>
         ) : (
           <>

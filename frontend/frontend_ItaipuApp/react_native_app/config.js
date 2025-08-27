@@ -3,29 +3,21 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Config = {
   // Endereço base da API
-  API_BASE: 'http://192.168.1.46:8000',
+  API_BASE: 'http://10.42.0.1:8000',
   
   // Endpoints da API
   ENDPOINTS: {
     profile: '/api/profile/',
     profileUpdate: '/api/profile/update/',
-    auth: {
-      register: '/api/auth/register/',
-      login: '/api/auth/login/',
-      verifyEmail: '/api/auth/verify-email/'
-    }
+    register: '/api/auth/register/',
+    login: '/api/auth/login/',
+    verifyCode: '/api/auth/verify-code/',
+    resendCode: '/api/auth/resend-code/'
   },
   
   // Método para gerar URLs completas
   getUrl: (endpoint) => {
-    let endpointPath;
-    
-    // Verifica se é um endpoint de autenticação
-    if (Config.ENDPOINTS.auth[endpoint]) {
-      endpointPath = Config.ENDPOINTS.auth[endpoint];
-    } else if (Config.ENDPOINTS[endpoint]) {
-      endpointPath = Config.ENDPOINTS[endpoint];
-    }
+    const endpointPath = Config.ENDPOINTS[endpoint];
     
     if (!endpointPath) {
       console.error(`Endpoint "${endpoint}" não encontrado`);

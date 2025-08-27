@@ -1,7 +1,7 @@
+// RegisterScreen.js
 import React, { useState } from 'react';
-import { View, ScrollView,Alert,Linking,StyleSheet } from 'react-native';
-import { Text, TextInput, Button, ActivityIndicator,Card } from 'react-native-paper';
-import * as Clipboard from 'expo-clipboard';
+import { View, ScrollView, Alert, StyleSheet } from 'react-native';
+import { Text, TextInput, Button, ActivityIndicator, Card } from 'react-native-paper';
 import axios from 'axios';
 import Config from '../config';
 import { useTheme } from '../context/ThemeContext';
@@ -43,46 +43,31 @@ export default function RegisterScreen({ navigation }) {
         }
       );
 
-      if (response.data.dev_link) {
-        Alert.alert(
-          'Conta criada com sucesso!',
-          `Copie o link abaixo para ativar sua conta:\n\n${response.data.dev_link}`,
-          [
-            { 
-              text: 'Copiar Link', 
-              onPress: () => Clipboard.setStringAsync(response.data.dev_link) 
-            },
-            { 
-              text: 'Abrir no Navegador', 
-              onPress: () => Linking.openURL(response.data.dev_link) 
-            },
-            { text: 'OK' }
-          ]
-        );
+      if (response.data.status === 'success') {
+        // Redireciona para a tela de verificação
+        navigation.navigate('Verification', {
+          user_id: response.data.user_id,
+          email: formData.email.trim()
+        });
       } else {
-        Alert.alert(
-          'Sucesso',
-          'Verifique seu e-mail para ativar sua conta'
-        );
+        setMensagem(response.data.message || 'Erro no registro');
       }
       
-      setMensagem(response.data.message);
-      
-    } catch (err) {
+    } catch (error) {
       let errorMessage = 'Erro ao cadastrar';
       
-      if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.message.includes('timeout')) {
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message.includes('timeout')) {
         errorMessage = 'Servidor não respondeu. Verifique sua conexão.';
-      } else if (err.message.includes('Network Error')) {
+      } else if (error.message.includes('Network Error')) {
         errorMessage = 'Erro de rede. Verifique se o servidor está rodando.';
       }
       
       setMensagem(errorMessage);
-      console.error('Erro detalhado:', err.response?.data || err.message);
+      console.error('Erro detalhado:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
@@ -196,8 +181,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    marginTop:150,
-    marginBottom: 10,
+    marginTop: 50,
+    marginBottom: 30,
     textAlign: 'center',
   },
   card: {

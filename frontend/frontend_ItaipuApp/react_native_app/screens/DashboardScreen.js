@@ -5,9 +5,9 @@ import { Card, Text, Button, Avatar, ActivityIndicator } from "react-native-pape
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Config from '../config'; // ✅ IMPORTAR O CONFIG
+import Config from '../config'; 
 
-const ESP_IP = "10.42.0.42";
+const ESP_IP = "10.42.0.43";
 const BASE_URL = `http://${ESP_IP}`;
 
 export default function DashboardScreen() {
@@ -207,7 +207,7 @@ export default function DashboardScreen() {
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header com Foto do Perfil */}
       <TouchableOpacity 
-        onPress={() => navigation.navigate('EditarConta')}
+        onPress={() => navigation.navigate('Conta')}
         style={styles.profileButton}
       >
         {userProfile.foto ? (
