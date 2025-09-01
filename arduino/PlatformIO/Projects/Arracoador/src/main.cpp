@@ -7,8 +7,8 @@
 #include "temperatura.h"
 
 // -------- CONFIG Wi-Fi --------
-const char* ssid = "cadu";
-const char* password = "cadu12345";
+const char* ssid = "ITAIU";
+const char* password = "ITAIPUCSC";
 
 // -------- SERVER WEB --------
 ESP8266WebServer server(80);
@@ -20,7 +20,7 @@ float fator_calibracao = 48100;
 HX711 escala;
 
 // -------- MOTOR --------
-const int pinMotor = 15; // D8
+const int pinMotor = 15; // Colocar o pin D3 
 const unsigned long TEMPO_POR_VOLTA = 1000;
 
 // -------- FUNÇÕES --------

@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(dotenv_path=str(BASE_DIR / '.env'))
 
 # Configurações de URL
-BACKEND_URL = 'http://192.168.1.46:8000'  # Seu endereço local
+BACKEND_URL = 'http://192.168.137.28:8000'  # Seu endereço local
 FRONTEND_URL = 'http://localhost:8081'  # Ou endereço do app
 # Segurança e variáveis do ambiente
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-fallback-key")
@@ -65,8 +65,8 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True  # cuidado em produção, prefira CORS_ALLOWED_ORIGINS
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8081",
-    "http://10.42.0.1:8081",
-    "exp://10.42.0.1:8081",
+    "http://192.168.137.66:8081",
+    "exp://192.168.137.66:8081",
 ]
 CORS_ALLOW_CREDENTIALS = True
 

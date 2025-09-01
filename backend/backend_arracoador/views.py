@@ -16,6 +16,9 @@ from .influx_services import get_sensor_data
 import uuid
 import logging
 import os
+import random
+from datetime import timedelta
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -46,6 +49,8 @@ def sensor_data_view(request):
         )
 
 # ====================== AUTENTICAÇÃO ======================
+
+# views.py - Mantenha o LoginView original e modifique apenas o registro
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -70,9 +75,9 @@ class RegisterView(APIView):
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
-                # CORREÇÃO: Primeiro verifica se usuário existe
+                # Verifica se usuário existe mas não está ativo (registro pendente)
                 try:
-                    user = User.objects.get(email=email)
+                    user = User.objects.get(email=email, is_active=False)
                     created = False
                 except User.DoesNotExist:
                     # Cria novo usuário
@@ -80,27 +85,28 @@ class RegisterView(APIView):
                         email=email,
                         username=email.split('@')[0],
                         first_name=first_name,
-                        is_active=False
+                        is_active=False  # IMPORTANTE: usuário fica inativo até verificação
                     )
                     created = True
 
-                # ⚠️ CORREÇÃO CRÍTICA: SEMPRE define a senha
-                user.set_password(password)  # Isso criptografa a senha
+                user.set_password(password)
                 user.first_name = first_name
-                user.is_active = False
-                user.save()  # ⚠️ SALVA as alterações
+                user.save()
 
-                # Gera token de verificação
-                token = str(uuid.uuid4())
+                # Gera código de verificação numérico (6 dígitos)
+                verification_code = str(random.randint(100000, 999999))
+                expires_at = timezone.now() + timedelta(minutes=15)
+
                 Profile.objects.update_or_create(
                     user=user,
                     defaults={
                         'phone': phone,
-                        'verification_token': token
+                        'verification_code': verification_code,
+                        'verification_code_expires': expires_at
                     }
                 )
 
-                return self._send_verification_email(user, token)
+                return self._send_verification_code(user, verification_code)
 
         except Exception as e:
             logger.error(f"Erro no registro: {str(e)}")
@@ -108,25 +114,16 @@ class RegisterView(APIView):
                 {"status": "error", "message": "Erro durante o registro"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
-    def _send_verification_email(self, user, token):
+    
+    def _send_verification_code(self, user, code):
         try:
-            # URL CORRETA - backend é quem processa a verificação
-            verification_link = f"{settings.BACKEND_URL}/api/auth/verify-email/{token}/"
-            
-            print(f"\n=== DEBUG: LINK DE VERIFICAÇÃO ===")
-            print(f"Email: {user.email}")
-            print(f"Link: {verification_link}")
-            print("===================================\n")
-
-            # SEMPRE tenta enviar email, mas em desenvolvimento mostra no console
-            subject = 'Ative sua conta - Arraçoador'
+            subject = 'Seu código de verificação - Arraçoador'
             message = f'''
             Olá {user.first_name},
 
-            Para ativar sua conta, clique no link abaixo:
+            Seu código de verificação é: {code}
 
-            {verification_link}
+            Use este código para ativar sua conta. O código expira em 15 minutos.
 
             Se você não criou esta conta, ignore este email.
 
@@ -134,62 +131,165 @@ class RegisterView(APIView):
             Equipe Arraçoador
             '''
 
-            # Tenta enviar o email
             send_mail(
                 subject=subject,
                 message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],
-                fail_silently=False,  # Isso vai mostrar erros se houver
+                fail_silently=False,
             )
 
-            print(f"✅ Email enviado para: {user.email}")
+            print(f"✅ Código enviado para: {user.email} - Código: {code}")
 
-            # Retorna resposta com link para desenvolvimento
-            response_data = {
+            return Response({
                 "status": "success",
-                "message": "Conta criada! Verifique seu email para ativar."
-            }
-            
-            if settings.DEBUG:
-                response_data["dev_link"] = verification_link
-                response_data["dev_message"] = "Modo desenvolvimento: use o link acima"
-
-            return Response(response_data, status=status.HTTP_201_CREATED)
+                "message": "Código de verificação enviado para seu email",
+                "user_id": user.id,
+                "email": user.email
+            }, status=status.HTTP_201_CREATED)
                 
         except Exception as e:
             print(f"❌ ERRO ao enviar email: {str(e)}")
-            
-            # Em caso de erro, ainda retorna sucesso com o link
-            verification_link = f"{settings.BACKEND_URL}/api/auth/verify-email/{token}/"
             return Response({
-                "status": "success",
-                "message": "Conta criada! Use o link abaixo para ativar:",
-                "dev_link": verification_link,
-                "error": f"Falha no email: {str(e)}" if settings.DEBUG else None
-            }, status=status.HTTP_201_CREATED)
-        
-class VerifyEmailView(APIView):
+                "status": "error",
+                "message": "Erro ao enviar código de verificação"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class VerifyCodeView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request, token):
-        try:
-            profile = Profile.objects.get(verification_token=token)
-            user = profile.user
-            user.is_active = True
-            user.save()
-            profile.verification_token = None
-            profile.save()
+    def post(self, request):
+        user_id = request.data.get('user_id')
+        code = request.data.get('code')
+
+        if not user_id or not code:
             return Response(
-                {"status": "success", "message": "Email verificado com sucesso!"},
-                status=status.HTTP_200_OK
-            )
-        except Profile.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Token inválido ou expirado"},
+                {"status": "error", "message": "ID do usuário e código são obrigatórios"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        try:
+            user = User.objects.get(id=user_id, is_active=False)
+            profile = Profile.objects.get(user=user)
+            
+            # Verifica se o código está correto e não expirou
+            if (profile.verification_code == code and 
+                profile.verification_code_expires > timezone.now()):
+                
+                # Ativa a conta do usuário
+                user.is_active = True
+                user.save()
+                
+                # Limpa o código de verificação
+                profile.verification_code = None
+                profile.verification_code_expires = None
+                profile.save()
+
+                # Gera token JWT para login automático após verificação
+                refresh = RefreshToken.for_user(user)
+                
+                return Response({
+                    "status": "success",
+                    "message": "Conta ativada com sucesso!",
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                    "user": {
+                        "id": user.id,
+                        "email": user.email,
+                        "first_name": user.first_name
+                    }
+                }, status=status.HTTP_200_OK)
+            
+            elif profile.verification_code_expires <= timezone.now():
+                return Response(
+                    {"status": "error", "message": "Código expirado"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                return Response(
+                    {"status": "error", "message": "Código inválido"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        except User.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "Usuário não encontrado"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Profile.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "Perfil não encontrado"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+class ResendCodeView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        user_id = request.data.get('user_id')
+        email = request.data.get('email')
+
+        if not user_id and not email:
+            return Response(
+                {"status": "error", "message": "ID do usuário ou email é obrigatório"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            if user_id:
+                user = User.objects.get(id=user_id, is_active=False)
+            else:
+                user = User.objects.get(email=email, is_active=False)
+
+            profile = Profile.objects.get(user=user)
+
+            # Gera novo código
+            new_code = str(random.randint(100000, 999999))
+            new_expires = timezone.now() + timedelta(minutes=15)
+
+            profile.verification_code = new_code
+            profile.verification_code_expires = new_expires
+            profile.save()
+
+            # Envia o novo código
+            subject = 'Novo código de verificação - Arraçoador'
+            message = f'''
+            Olá {user.first_name},
+
+            Seu novo código de verificação é: {new_code}
+
+            Use este código para ativar sua conta. O código expira em 15 minutos.
+
+            Atenciosamente,
+            Equipe AquaSense
+            '''
+
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
+            return Response({
+                "status": "success",
+                "message": "Novo código enviado para seu email",
+                "user_id": user.id
+            }, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "Usuário não encontrado"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Profile.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "Perfil não encontrado"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+# MANTENHA O LoginView ORIGINAL - ele continua funcionando com token JWT
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -197,7 +297,7 @@ class LoginView(APIView):
         email = request.data.get("email")
         password = request.data.get("password")
 
-        print(f"Tentativa de login: {email}")  # DEBUG
+        print(f"Tentativa de login: {email}")
 
         if not email or not password:
             return Response(
@@ -207,10 +307,10 @@ class LoginView(APIView):
 
         try:
             user = User.objects.get(email=email)
-            print(f"Usuário encontrado: {user.email}, Ativo: {user.is_active}")  # DEBUG
+            print(f"Usuário encontrado: {user.email}, Ativo: {user.is_active}")
             
             if not user.is_active:
-                print("Usuário não está ativo!")  # DEBUG
+                print("Usuário não está ativo!")
                 return Response(
                     {
                         "status": "error",
@@ -222,17 +322,17 @@ class LoginView(APIView):
 
             # Tenta autenticar
             authenticated_user = authenticate(username=user.username, password=password)
-            print(f"Autenticação resultou: {authenticated_user}")  # DEBUG
+            print(f"Autenticação resultou: {authenticated_user}")
             
             if not authenticated_user:
-                print("Falha na autenticação - senha incorreta")  # DEBUG
+                print("Falha na autenticação - senha incorreta")
                 return Response(
                     {"status": "error", "message": "Credenciais inválidas"},
                     status=status.HTTP_401_UNAUTHORIZED
                 )
 
             refresh = RefreshToken.for_user(authenticated_user)
-            print("Login bem-sucedido, gerando tokens")  # DEBUG
+            print("Login bem-sucedido, gerando tokens")
             
             return Response({
                 "status": "success",
@@ -247,7 +347,7 @@ class LoginView(APIView):
             }, status=status.HTTP_200_OK)
 
         except User.DoesNotExist:
-            print("Usuário não encontrado")  # DEBUG
+            print("Usuário não encontrado")
             return Response(
                 {"status": "error", "message": "Email não cadastrado"},
                 status=status.HTTP_404_NOT_FOUND
