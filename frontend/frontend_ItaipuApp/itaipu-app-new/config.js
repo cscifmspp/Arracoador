@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Config = {
   // Endereço base da API
-  API_BASE:'http://192.168.1.46:8000',
+  API_BASE:'http://192.168.137.66:8000',
   
   // Endpoints da API
   ENDPOINTS: {

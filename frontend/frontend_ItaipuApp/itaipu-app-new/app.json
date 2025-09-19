@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "",
+    "slug": "snack-c9c395fd-6097-485e-aece-0518b2e528e2",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logoItaipu.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugin": [
+      "expo-react-native-reanimated/plugin"
+    ],
+    "splash": {
+      "image": "./assets/logoItaipu.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logoItaipu.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.anonymous.snackc9c395fd6097485eaece0518b2e528e2"
+    },
+    "web": {
+      "favicon": "./assets/logoItaipu.png"
+    },
+    "plugins": [
+      "expo-font",
+    [
+    "expo-image-picker",
+      {
+        "photosPermission": "Permite acessar suas fotos para alterar a imagem de perfil.",
+        "cameraPermission": "Permite tirar fotos para usar como imagem de perfil."
+      }
+  ]
+]
+  }
+}
